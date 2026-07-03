@@ -7,6 +7,8 @@ interface UserData {
   completedTasks: number
   earnedTotal: number
   spentTotal: number
+  referralCode: string
+  referrals: number
 }
 
 export default function Home() {
@@ -14,14 +16,20 @@ export default function Home() {
   const [tab, setTab] = useState('tasks')
   const [wordCount, setWordCount] = useState(0)
   const [reelsUrl, setReelsUrl] = useState('')
-  const [slots, setSlots] = useState(20)
+  const [slots, setSlots] = useState(10)
   const [igInput, setIgInput] = useState('')
   const [taskDone, setTaskDone] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [botName] = useState('reelsboost_bot')
 
   useEffect(() => {
     const saved = localStorage.getItem('reels_boost_user')
     if (saved) setUser(JSON.parse(saved))
   }, [])
+
+  const generateCode = (ig: string) => {
+    return ig.replace('@', '').toUpperCase().slice(0, 6) + Math.random().toString(36).slice(2, 4).toUpperCase()
+  }
 
   const saveUser = (data: UserData) => {
     setUser(data)
@@ -30,12 +38,25 @@ export default function Home() {
 
   const register = () => {
     if (!igInput) return
+    const params = new URLSearchParams(window.location.search)
+    const refCode = params.get('start')
+    if (refCode) {
+      const allUsers = JSON.parse(localStorage.getItem('all_users') || '[]')
+      const refUser = allUsers.find((u: UserData) => u.referralCode === refCode)
+      if (refUser) {
+        refUser.balance += 20
+        refUser.referrals += 1
+        localStorage.setItem('all_users', JSON.stringify(allUsers))
+      }
+    }
     const newUser: UserData = {
       igUsername: igInput,
-      balance: 10,
+      balance: refCode ? 30 : 10,
       completedTasks: 0,
-      earnedTotal: 0,
+      earnedTotal: refCode ? 20 : 0,
       spentTotal: 0,
+      referralCode: generateCode(igInput),
+      referrals: 0,
     }
     saveUser(newUser)
   }
@@ -67,42 +88,48 @@ export default function Home() {
     alert('Reels запущен в продвижение!')
   }
 
+  const copyReferral = () => {
+    if (!user) return
+    const link = `https://t.me/${botName}?start=${user.referralCode}`
+    navigator.clipboard.writeText(link)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   const countWords = (text: string) => {
     const words = text.trim().split(/\s+/).filter((w: string) => w.length > 0)
     setWordCount(words.length)
   }
 
   if (!user) return (
-    <div style="min-height:100vh;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
-        <div className="w-16 h-16 bg-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-4">
-          <span className="text-3xl">🚀</span>
-        </div>
-        <h1 className="text-2xl font-bold mb-1">Reels Boost</h1>
-        <p className="text-gray-400 text-sm mb-8">Комьюнити Instagram авторов</p>
-        <div className="w-full mb-2">
-          <div className="text-sm font-medium text-gray-700 mb-2">Твой Instagram</div>
-          <input
-            className="w-full border border-gray-200 rounded-2xl p-4 text-sm outline-none focus:border-blue-400"
-            placeholder="@username"
-            value={igInput}
-            onChange={e => setIgInput(e.target.value)}
-          />
-          <div className="text-xs text-gray-400 mt-2">Открытый аккаунт, старше 30 дней, от 100 подписчиков</div>
-        </div>
-        <div className="w-full bg-blue-50 rounded-2xl p-4 mb-6">
-          <div className="text-sm font-medium text-blue-700 mb-2">Как это работает</div>
-          <div className="text-xs text-blue-600 space-y-1">
-            <div>1. Выполняй задания — зарабатывай Credits</div>
-            <div>2. Трать Credits на продвижение своих Reels</div>
-            <div>3. Получай живую активность от реальных людей</div>
-          </div>
-        </div>
-        <button
-          onClick={register}
-          className={`w-full rounded-2xl p-4 font-medium text-base ${igInput ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-400'}`}
-        >Начать</button>
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
+      <div className="w-16 h-16 bg-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-4">
+        <span className="text-3xl">🚀</span>
       </div>
+      <h1 className="text-2xl font-bold mb-1">Reels Boost</h1>
+      <p className="text-gray-400 text-sm mb-8">Комьюнити Instagram авторов</p>
+      <div className="w-full mb-2">
+        <div className="text-sm font-medium text-gray-700 mb-2">Твой Instagram</div>
+        <input
+          className="w-full border border-gray-200 rounded-2xl p-4 text-sm outline-none focus:border-blue-400"
+          placeholder="@username"
+          value={igInput}
+          onChange={e => setIgInput(e.target.value)}
+        />
+        <div className="text-xs text-gray-400 mt-2">Открытый аккаунт, старше 30 дней, от 100 подписчиков</div>
+      </div>
+      <div className="w-full bg-blue-50 rounded-2xl p-4 mb-6">
+        <div className="text-sm font-medium text-blue-700 mb-2">Как это работает</div>
+        <div className="text-xs text-blue-600 space-y-1">
+          <div>1. Выполняй задания — зарабатывай Credits</div>
+          <div>2. Трать Credits на продвижение своих Reels</div>
+          <div>3. Получай живую активность от реальных людей</div>
+        </div>
+      </div>
+      <button
+        onClick={register}
+        className={`w-full rounded-2xl p-4 font-medium text-base ${igInput ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-400'}`}
+      >Начать</button>
     </div>
   )
 
@@ -116,7 +143,7 @@ export default function Home() {
             <div className="text-2xl font-bold">{user.balance} <span className="text-blue-500">₢</span></div>
           </div>
           <div className="text-right">
-            <div className="text-xs text-gray-400">{user.igUsername}</div>
+            <div className="text-xs text-gray-500 font-medium">{user.igUsername}</div>
             <div className="text-xs text-gray-400 mt-1">Заданий: {user.completedTasks}</div>
           </div>
         </div>
@@ -126,8 +153,8 @@ export default function Home() {
             {taskDone && (
               <div className="bg-green-50 border border-green-100 rounded-2xl p-4 mb-4 text-center">
                 <div className="text-green-600 font-medium mb-1">+15 ₢ начислено!</div>
-                <div className="text-xs text-green-500">Задание выполнено. Следующее уже ждёт!</div>
-                <button onClick={() => setTaskDone(false)} className="mt-2 text-xs text-green-600 underline">Следующее задание</button>
+                <div className="text-xs text-green-500 mb-2">Задание выполнено успешно</div>
+                <button onClick={() => setTaskDone(false)} className="text-xs text-green-600 underline">Следующее задание</button>
               </div>
             )}
             {!taskDone && (
@@ -175,11 +202,11 @@ export default function Home() {
               <div className="text-sm font-medium mb-3">Моя статистика</div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-gray-50 rounded-xl p-3">
-                  <div className="text-xs text-gray-400">Выполнено заданий</div>
+                  <div className="text-xs text-gray-400">Заданий</div>
                   <div className="text-xl font-bold">{user.completedTasks}</div>
                 </div>
                 <div className="bg-gray-50 rounded-xl p-3">
-                  <div className="text-xs text-gray-400">Заработано всего</div>
+                  <div className="text-xs text-gray-400">Заработано</div>
                   <div className="text-xl font-bold text-green-500">{user.earnedTotal} ₢</div>
                 </div>
                 <div className="bg-gray-50 rounded-xl p-3">
@@ -187,10 +214,23 @@ export default function Home() {
                   <div className="text-xl font-bold text-blue-500">{user.spentTotal} ₢</div>
                 </div>
                 <div className="bg-gray-50 rounded-xl p-3">
-                  <div className="text-xs text-gray-400">Баланс</div>
-                  <div className="text-xl font-bold">{user.balance} ₢</div>
+                  <div className="text-xs text-gray-400">Приглашено</div>
+                  <div className="text-xl font-bold text-purple-500">{user.referrals}</div>
                 </div>
               </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-4 mt-4 border border-gray-100">
+              <div className="text-sm font-medium mb-1">Пригласи друга</div>
+              <div className="text-xs text-gray-400 mb-3">Ты и друг получите по <span className="text-green-500 font-medium">+20 ₢</span></div>
+              <div className="bg-gray-50 rounded-xl p-3 flex justify-between items-center gap-2 mb-2">
+                <div className="text-xs text-gray-500 truncate">t.me/{botName}?start={user.referralCode}</div>
+                <button
+                  onClick={copyReferral}
+                  className={`text-xs font-medium whitespace-nowrap px-3 py-1.5 rounded-lg ${copied ? 'bg-green-500 text-white' : 'bg-blue-500 text-white'}`}
+                >{copied ? 'Скопировано!' : 'Копировать'}</button>
+              </div>
+              <div className="text-xs text-gray-400 text-center">Приглашено друзей: <span className="font-medium text-purple-500">{user.referrals}</span></div>
             </div>
           </div>
         )}
