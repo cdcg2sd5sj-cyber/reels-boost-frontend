@@ -214,7 +214,7 @@ export default function Home() {
                   <div className="text-xs text-gray-400 mt-0.5">Стоимость: {Math.ceil(slots * 1.5)} ₢</div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button onClick={() => setSlots(s => Math.max(5, s-5))} className="w-9 h-9 rounded-xl border border-gray-200 text-lg font-medium">-</button>
+                  <button onClick={() => setSlots(s => Math.max(10, s-5))} className="w-9 h-9 rounded-xl border border-gray-200 text-lg font-medium">-</button>
                   <div className="font-bold text-lg w-8 text-center">{slots}</div>
                   <button onClick={() => setSlots(s => Math.min(100, s+5))} className="w-9 h-9 rounded-xl border border-gray-200 text-lg font-medium">+</button>
                 </div>
