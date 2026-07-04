@@ -1,6 +1,19 @@
 'use client'
 import { useState, useEffect } from 'react'
 
+const STARTER_TASKS = [
+  { id: 1, url: 'https://www.instagram.com/reel/DYFKNNgsAkD/' },
+  { id: 2, url: 'https://www.instagram.com/reel/DaWqnWJK_YM/' },
+  { id: 3, url: 'https://www.instagram.com/reel/DaVAMYXypaS/' },
+  { id: 4, url: 'https://www.instagram.com/reel/DaXAzsttegn/' },
+  { id: 5, url: 'https://www.instagram.com/reel/DaV267fOz_r/' },
+  { id: 6, url: 'https://www.instagram.com/reel/DZc4LwRClgl/' },
+  { id: 7, url: 'https://www.instagram.com/reel/DXEpXXFDWG5/' },
+  { id: 8, url: 'https://www.instagram.com/reel/DaVr17juRHm/' },
+  { id: 9, url: 'https://www.instagram.com/reel/CxIRerGs0W1/' },
+  { id: 10, url: 'https://www.instagram.com/reel/DYpGlZWMXK1/' },
+]
+
 interface Boost { url: string; slots: number; filled: number; date: string }
 interface UserData {
   igUsername: string
@@ -13,6 +26,7 @@ interface UserData {
   streak: number
   lastTaskDate: string
   boosts: Boost[]
+  completedTaskIds: number[]
 }
 
 const PURPLE = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%)'
@@ -37,10 +51,17 @@ export default function Home() {
   const [taskDone, setTaskDone] = useState(false)
   const [copied, setCopied] = useState(false)
   const [streakBonus, setStreakBonus] = useState(false)
+  const [currentTask, setCurrentTask] = useState(STARTER_TASKS[0])
+  const [reelsOpened, setReelsOpened] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem('reels_boost_user')
-    if (saved) setUser(JSON.parse(saved))
+    if (saved) {
+      const u = JSON.parse(saved)
+      setUser(u)
+      const next = STARTER_TASKS.find(t => !(u.completedTaskIds || []).includes(t.id))
+      if (next) setCurrentTask(next)
+    }
   }, [])
 
   const generateCode = (ig: string) =>
@@ -56,8 +77,13 @@ export default function Home() {
     saveUser({
       igUsername: igInput, balance: 10, completedTasks: 0,
       earnedTotal: 0, spentTotal: 0, referralCode: generateCode(igInput),
-      referrals: 0, streak: 0, lastTaskDate: '', boosts: [],
+      referrals: 0, streak: 0, lastTaskDate: '', boosts: [], completedTaskIds: [],
     })
+  }
+
+  const openReels = () => {
+    window.open(currentTask.url, '_blank')
+    setReelsOpened(true)
   }
 
   const completeTask = () => {
@@ -65,8 +91,11 @@ export default function Home() {
     const today = new Date().toDateString()
     const yesterday = new Date(Date.now() - 86400000).toDateString()
     const newStreak = user.lastTaskDate === yesterday ? user.streak + 1 : user.lastTaskDate === today ? user.streak : 1
-    const streakBonus30 = newStreak > 0 && newStreak % 7 === 0
-    const bonus = streakBonus30 ? 30 : 0
+    const isStreakBonus = newStreak > 0 && newStreak % 7 === 0
+    const bonus = isStreakBonus ? 30 : 0
+    const newCompletedIds = [...(user.completedTaskIds || []), currentTask.id]
+    const nextTask = STARTER_TASKS.find(t => !newCompletedIds.includes(t.id))
+
     saveUser({
       ...user,
       balance: user.balance + 15 + bonus,
@@ -74,11 +103,15 @@ export default function Home() {
       earnedTotal: user.earnedTotal + 15 + bonus,
       streak: newStreak,
       lastTaskDate: today,
+      completedTaskIds: newCompletedIds,
     })
-    if (streakBonus30) setStreakBonus(true)
+
+    if (isStreakBonus) setStreakBonus(true)
     setTaskDone(true)
     setWordCount(0)
     setComment('')
+    setReelsOpened(false)
+    if (nextTask) setCurrentTask(nextTask)
   }
 
   const launchBoost = () => {
@@ -86,12 +119,7 @@ export default function Home() {
     const cost = Math.ceil(slots * 1.5)
     if (user.balance < cost || !reelsUrl) return
     const newBoost: Boost = { url: reelsUrl, slots, filled: 0, date: new Date().toLocaleDateString('ru') }
-    saveUser({
-      ...user,
-      balance: user.balance - cost,
-      spentTotal: user.spentTotal + cost,
-      boosts: [newBoost, ...user.boosts],
-    })
+    saveUser({ ...user, balance: user.balance - cost, spentTotal: user.spentTotal + cost, boosts: [newBoost, ...user.boosts] })
     setReelsUrl('')
     setSlots(10)
   }
@@ -107,7 +135,7 @@ export default function Home() {
     page: { minHeight: '100vh', background: '#0f0f1a', display: 'flex', flexDirection: 'column' as const },
     card: { background: 'rgba(255,255,255,0.07)', borderRadius: 16, margin: '8px 12px', padding: 14, border: '0.5px solid rgba(255,255,255,0.1)' },
     input: { width: '100%', background: 'rgba(255,255,255,0.07)', border: '0.5px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '10px 12px', fontSize: 13, color: '#fff', outline: 'none' },
-    btnGrad: (grad: string, opacity = 1) => ({ background: grad, borderRadius: 14, padding: '13px 16px', textAlign: 'center' as const, fontSize: 14, fontWeight: 700, color: '#fff', margin: '8px 12px', cursor: 'pointer', border: 'none', width: 'calc(100% - 24px)', opacity, display: 'block' }),
+    btnGrad: (grad: string, opacity = 1) => ({ background: grad, borderRadius: 14, padding: '13px 16px', textAlign: 'center' as const, fontSize: 14, fontWeight: 700, color: '#fff', margin: '8px 12px', cursor: opacity < 1 ? 'default' : 'pointer', border: 'none', width: 'calc(100% - 24px)', opacity, display: 'block' }),
     stepDot: { width: 20, height: 20, borderRadius: '50%', background: PURPLE, color: '#fff', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
     navBar: { background: '#1a1a2e', borderTop: '0.5px solid rgba(255,255,255,0.08)', display: 'flex', position: 'fixed' as const, bottom: 0, left: 0, right: 0, height: 60 },
   }
@@ -139,11 +167,11 @@ export default function Home() {
 
   const level = getLevel(user.completedTasks)
   const progressToNext = level.next ? Math.round((user.completedTasks / level.next) * 100) : 100
+  const allTasksDone = (user.completedTaskIds || []).length >= STARTER_TASKS.length
 
   return (
     <div style={s.page}>
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 72 }}>
-
         <div style={{ background: tab === 'boost' ? BLUE : tab === 'stats' ? GREEN : PURPLE, padding: '20px 16px 16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
@@ -159,7 +187,7 @@ export default function Home() {
             <div style={{ marginTop: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'rgba(255,255,255,0.5)', marginBottom: 4 }}>
                 <span>{user.completedTasks} заданий</span>
-                <span>до {level.next} → следующий уровень</span>
+                <span>до {level.next} — следующий уровень</span>
               </div>
               <div style={{ height: 4, background: 'rgba(255,255,255,0.2)', borderRadius: 4 }}>
                 <div style={{ height: '100%', width: `${progressToNext}%`, background: '#fff', borderRadius: 4 }}></div>
@@ -185,38 +213,59 @@ export default function Home() {
                 <button style={s.btnGrad(PURPLE)} onClick={() => setStreakBonus(false)}>Отлично!</button>
               </div>
             )}
-            {taskDone && !streakBonus ? (
+            {taskDone && !streakBonus && (
               <div style={{ ...s.card, background: 'rgba(74,222,128,0.1)', border: '0.5px solid rgba(74,222,128,0.2)', textAlign: 'center', padding: 20 }}>
                 <div style={{ fontSize: 28, marginBottom: 6 }}>🎉</div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: '#4ade80', marginBottom: 4 }}>+15 ₢ начислено!</div>
                 <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>Стрик: {user.streak} дней 🔥</div>
                 <button style={s.btnGrad(PURPLE)} onClick={() => setTaskDone(false)}>Следующее задание</button>
               </div>
-            ) : !streakBonus && (
-              <>
-                <div style={s.card}>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: '#4ade80', marginBottom: 2 }}>+15 ₢</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>за выполнение задания</div>
-                  {['Открой Reels по ссылке', 'Досмотри до конца 3 раза', 'Лайк, сохранение, сторис, отправь другу', 'Оставь комментарий в Instagram'].map((step, i) => (
-                    <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'flex-start' }}>
-                      <div style={s.stepDot}>{i+1}</div>
-                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', paddingTop: 2 }}>{step}</div>
+            )}
+            {!taskDone && !streakBonus && (
+              allTasksDone ? (
+                <div style={{ ...s.card, textAlign: 'center', padding: 30 }}>
+                  <div style={{ fontSize: 32, marginBottom: 8 }}>🎉</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Все задания выполнены!</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>Новые появятся скоро. Запусти свой Reels!</div>
+                  <button style={{ ...s.btnGrad(BLUE), marginTop: 12 }} onClick={() => setTab('boost')}>Продвинуть мой Reels</button>
+                </div>
+              ) : (
+                <>
+                  <div style={s.card}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: '#4ade80' }}>+15 ₢</div>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>задание {(user.completedTaskIds||[]).length + 1} из {STARTER_TASKS.length}</div>
                     </div>
-                  ))}
-                </div>
-                <button style={s.btnGrad(PURPLE)}>Открыть Reels</button>
-                <div style={{ background: 'rgba(99,102,241,0.12)', borderRadius: 14, margin: '0 12px 8px', padding: 12, border: '0.5px solid rgba(99,102,241,0.25)' }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: '#a5b4fc', marginBottom: 3 }}>Вставь свой комментарий</div>
-                  <div style={{ fontSize: 10, color: 'rgba(165,180,252,0.7)' }}>Написанный в Instagram — минимум 10 слов. ИИ проверит.</div>
-                </div>
-                <textarea
-                  style={{ ...s.input, margin: '0 12px 4px', width: 'calc(100% - 24px)', height: 80, resize: 'none', padding: 12 }}
-                  value={comment}
-                  onChange={e => { setComment(e.target.value); setWordCount(e.target.value.trim().split(/\s+/).filter((w: string) => w).length) }}
-                />
-                <div style={{ fontSize: 10, textAlign: 'right', margin: '0 12px 8px', color: wordCount >= 10 ? '#4ade80' : 'rgba(255,255,255,0.3)' }}>{wordCount} / 10 слов</div>
-                <button style={s.btnGrad(wordCount >= 10 ? PURPLE : 'rgba(255,255,255,0.1)', wordCount >= 10 ? 1 : 0.5)} onClick={completeTask}>Отправить на проверку — получить 15 ₢</button>
-              </>
+                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>за выполнение задания</div>
+                    {['Открой Reels по ссылке', 'Досмотри до конца 3 раза', 'Лайк, сохранение, сторис, отправь другу', 'Оставь комментарий в Instagram'].map((step, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'flex-start' }}>
+                        <div style={s.stepDot}>{i+1}</div>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', paddingTop: 2 }}>{step}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <button style={s.btnGrad(PURPLE)} onClick={openReels}>
+                    {reelsOpened ? 'Открыть Reels снова' : 'Открыть Reels'}
+                  </button>
+                  {reelsOpened && (
+                    <>
+                      <div style={{ background: 'rgba(99,102,241,0.12)', borderRadius: 14, margin: '0 12px 8px', padding: 12, border: '0.5px solid rgba(99,102,241,0.25)' }}>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: '#a5b4fc', marginBottom: 3 }}>Вставь свой комментарий</div>
+                        <div style={{ fontSize: 10, color: 'rgba(165,180,252,0.7)' }}>Написанный в Instagram — минимум 10 слов. ИИ проверит.</div>
+                      </div>
+                      <textarea
+                        style={{ ...s.input, margin: '0 12px 4px', width: 'calc(100% - 24px)', height: 80, resize: 'none', padding: 12 }}
+                        value={comment}
+                        onChange={e => { setComment(e.target.value); setWordCount(e.target.value.trim().split(/\s+/).filter((w: string) => w).length) }}
+                      />
+                      <div style={{ fontSize: 10, textAlign: 'right', margin: '0 12px 8px', color: wordCount >= 10 ? '#4ade80' : 'rgba(255,255,255,0.3)' }}>{wordCount} / 10 слов</div>
+                      <button style={s.btnGrad(wordCount >= 10 ? PURPLE : 'rgba(255,255,255,0.1)', wordCount >= 10 ? 1 : 0.5)} onClick={completeTask}>
+                        Отправить на проверку — получить 15 ₢
+                      </button>
+                    </>
+                  )}
+                </>
+              )
             )}
           </>
         )}
@@ -246,7 +295,6 @@ export default function Home() {
               </div>
             )}
             <button style={s.btnGrad(BLUE, user.balance >= Math.ceil(slots * 1.5) && reelsUrl ? 1 : 0.35)} onClick={launchBoost}>Запустить продвижение</button>
-
             {user.boosts.length > 0 && (
               <div style={s.card}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10 }}>История продвижений</div>
@@ -287,7 +335,6 @@ export default function Home() {
                 ))}
               </div>
             </div>
-
             <div style={s.card}>
               <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 4 }}>Пригласи друга</div>
               <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 10 }}>Ты и друг получите по <span style={{ color: '#4ade80', fontWeight: 600 }}>+20 ₢</span></div>
@@ -298,7 +345,6 @@ export default function Home() {
                 </button>
               </div>
             </div>
-
             <div style={s.card}>
               <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10 }}>Уровни</div>
               {[
