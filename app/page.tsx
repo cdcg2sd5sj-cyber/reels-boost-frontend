@@ -458,9 +458,9 @@ export default function Home() {
 
       <div style={s.navBar}>
         {[
-          { id: 'tasks', icon: 'ti-list', label: 'Задания' },
-          { id: 'boost', icon: 'ti-rocket', label: 'Мой Reels' },
-          { id: 'stats', icon: 'ti-chart-bar', label: 'Профиль' },
+          { id: "tasks", icon: "ti-list-check", label: "Задания" },
+          { id: "boost", icon: "ti-brand-instagram", label: "Мой Reels" },
+          { id: "stats", icon: "ti-user-circle", label: "Профиль" },
         ].map(item => (
           <button key={item.id} onClick={() => setTab(item.id)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, background: 'transparent', border: 'none', cursor: 'pointer', color: tab === item.id ? '#a855f7' : 'rgba(255,255,255,0.35)', fontSize: 10, fontWeight: 500 }}>
             <i className={`ti ${item.icon}`} style={{ fontSize: 20 }} aria-hidden="true"></i>
