@@ -214,9 +214,7 @@ export default function Home() {
   if (!user) return (
     <div style={{ ...s.page, justifyContent: 'center' }}>
       
-        <div style={{ width: 56, height: 56, background: 'rgba(255,255,255,0.2)', borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: 26 }}>🚀</div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 4 }}>Reels Boost</div>
-        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>Комьюнити Instagram авторов</div>
+        <img src="/banner.jpg" style={{ width: '100%', display: 'block', borderRadius: '0 0 16px 16px' }} alt="Reels Boost" />
       </div>
       <div style={{ padding: '20px 16px', flex: 1 }}>
         <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>Твой Instagram</div>
