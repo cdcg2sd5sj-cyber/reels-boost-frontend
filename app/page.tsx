@@ -103,7 +103,11 @@ export default function Home() {
     if (window.Telegram?.WebApp) {
       window.Telegram.WebApp.openLink(currentTask.url)
     } else {
+      if (window.Telegram?.WebApp) {
+      window.Telegram.WebApp.openLink(currentTask.url)
+    } else {
       window.open(currentTask.url, '_blank')
+    }
     }
     setReelsOpened(true)
     setTimer(0)
