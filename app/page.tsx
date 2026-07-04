@@ -11,25 +11,27 @@ interface UserData {
   referrals: number
 }
 
+const PURPLE = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%)'
+const BLUE = 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)'
+
 export default function Home() {
   const [user, setUser] = useState<UserData | null>(null)
   const [tab, setTab] = useState('tasks')
   const [wordCount, setWordCount] = useState(0)
+  const [comment, setComment] = useState('')
   const [reelsUrl, setReelsUrl] = useState('')
   const [slots, setSlots] = useState(10)
   const [igInput, setIgInput] = useState('')
   const [taskDone, setTaskDone] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [botName] = useState('reelsboost_bot')
 
   useEffect(() => {
     const saved = localStorage.getItem('reels_boost_user')
     if (saved) setUser(JSON.parse(saved))
   }, [])
 
-  const generateCode = (ig: string) => {
-    return ig.replace('@', '').toUpperCase().slice(0, 6) + Math.random().toString(36).slice(2, 4).toUpperCase()
-  }
+  const generateCode = (ig: string) =>
+    ig.replace('@', '').toUpperCase().slice(0, 6) + Math.random().toString(36).slice(2, 4).toUpperCase()
 
   const saveUser = (data: UserData) => {
     setUser(data)
@@ -38,249 +40,197 @@ export default function Home() {
 
   const register = () => {
     if (!igInput) return
-    const params = new URLSearchParams(window.location.search)
-    const refCode = params.get('start')
-    if (refCode) {
-      const allUsers = JSON.parse(localStorage.getItem('all_users') || '[]')
-      const refUser = allUsers.find((u: UserData) => u.referralCode === refCode)
-      if (refUser) {
-        refUser.balance += 20
-        refUser.referrals += 1
-        localStorage.setItem('all_users', JSON.stringify(allUsers))
-      }
-    }
-    const newUser: UserData = {
+    saveUser({
       igUsername: igInput,
-      balance: refCode ? 30 : 10,
+      balance: 10,
       completedTasks: 0,
-      earnedTotal: refCode ? 20 : 0,
+      earnedTotal: 0,
       spentTotal: 0,
       referralCode: generateCode(igInput),
       referrals: 0,
-    }
-    saveUser(newUser)
+    })
   }
 
   const completeTask = () => {
     if (!user || wordCount < 10) return
-    const updated = {
-      ...user,
-      balance: user.balance + 15,
-      completedTasks: user.completedTasks + 1,
-      earnedTotal: user.earnedTotal + 15,
-    }
-    saveUser(updated)
+    saveUser({ ...user, balance: user.balance + 15, completedTasks: user.completedTasks + 1, earnedTotal: user.earnedTotal + 15 })
     setTaskDone(true)
     setWordCount(0)
+    setComment('')
   }
 
   const launchBoost = () => {
     if (!user) return
     const cost = Math.ceil(slots * 1.5)
     if (user.balance < cost || !reelsUrl) return
-    const updated = {
-      ...user,
-      balance: user.balance - cost,
-      spentTotal: user.spentTotal + cost,
-    }
-    saveUser(updated)
+    saveUser({ ...user, balance: user.balance - cost, spentTotal: user.spentTotal + cost })
     setReelsUrl('')
     alert('Reels запущен в продвижение!')
   }
 
   const copyReferral = () => {
     if (!user) return
-    const link = `https://t.me/${botName}?start=${user.referralCode}`
-    navigator.clipboard.writeText(link)
+    navigator.clipboard.writeText(`https://t.me/reelsboost_bot?start=${user.referralCode}`)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const countWords = (text: string) => {
-    const words = text.trim().split(/\s+/).filter((w: string) => w.length > 0)
-    setWordCount(words.length)
+  const s = {
+    page: { minHeight: '100vh', background: '#0f0f1a', display: 'flex', flexDirection: 'column' as const },
+    header: (grad: string) => ({ background: grad, padding: '20px 16px 16px' }),
+    card: { background: 'rgba(255,255,255,0.07)', borderRadius: 16, margin: '8px 12px', padding: 14, border: '0.5px solid rgba(255,255,255,0.1)' },
+    input: { width: '100%', background: 'rgba(255,255,255,0.07)', border: '0.5px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '10px 12px', fontSize: 13, color: '#fff', outline: 'none' },
+    btnGrad: { background: PURPLE, borderRadius: 14, padding: '13px 16px', textAlign: 'center' as const, fontSize: 14, fontWeight: 700, color: '#fff', margin: '8px 12px', cursor: 'pointer', border: 'none', width: 'calc(100% - 24px)' },
+    btnOutline: { background: 'transparent', border: '0.5px solid rgba(255,255,255,0.2)', borderRadius: 14, padding: '13px 16px', textAlign: 'center' as const, fontSize: 13, color: 'rgba(255,255,255,0.6)', margin: '6px 12px', cursor: 'pointer', width: 'calc(100% - 24px)' },
+    stepDot: { width: 20, height: 20, borderRadius: '50%', background: PURPLE, color: '#fff', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+    navBar: { background: '#1a1a2e', borderTop: '0.5px solid rgba(255,255,255,0.08)', display: 'flex', position: 'fixed' as const, bottom: 0, left: 0, right: 0, height: 60 },
   }
 
   if (!user) return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
-      <div className="w-16 h-16 bg-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-4">
-        <span className="text-3xl">🚀</span>
+    <div style={{ ...s.page, justifyContent: 'center' }}>
+      <div style={{ background: PURPLE, padding: '40px 24px 28px', textAlign: 'center' }}>
+        <div style={{ width: 56, height: 56, background: 'rgba(255,255,255,0.2)', borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: 26 }}>🚀</div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 4 }}>Reels Boost</div>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>Комьюнити Instagram авторов</div>
       </div>
-      <h1 className="text-2xl font-bold mb-1">Reels Boost</h1>
-      <p className="text-gray-400 text-sm mb-8">Комьюнити Instagram авторов</p>
-      <div className="w-full mb-2">
-        <div className="text-sm font-medium text-gray-700 mb-2">Твой Instagram</div>
-        <input
-          className="w-full border border-gray-200 rounded-2xl p-4 text-sm outline-none focus:border-blue-400"
-          placeholder="@username"
-          value={igInput}
-          onChange={e => setIgInput(e.target.value)}
-        />
-        <div className="text-xs text-gray-400 mt-2">Открытый аккаунт, старше 30 дней, от 100 подписчиков</div>
-      </div>
-      <div className="w-full bg-blue-50 rounded-2xl p-4 mb-6">
-        <div className="text-sm font-medium text-blue-700 mb-2">Как это работает</div>
-        <div className="text-xs text-blue-600 space-y-1">
-          <div>1. Выполняй задания — зарабатывай Credits</div>
-          <div>2. Трать Credits на продвижение своих Reels</div>
-          <div>3. Получай живую активность от реальных людей</div>
+      <div style={{ padding: '20px 16px', flex: 1 }}>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>Твой Instagram</div>
+        <input style={{ ...s.input, marginBottom: 8 }} placeholder="@username" value={igInput} onChange={e => setIgInput(e.target.value)} />
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 20 }}>Открытый аккаунт, старше 30 дней, от 100 подписчиков</div>
+        <div style={{ background: 'rgba(99,102,241,0.15)', borderRadius: 14, padding: 14, marginBottom: 24, border: '0.5px solid rgba(99,102,241,0.25)' }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#a5b4fc', marginBottom: 8 }}>Как это работает</div>
+          {['Выполняй задания — зарабатывай Credits', 'Трать Credits на продвижение Reels', 'Получай живую активность от реальных людей'].map((t, i) => (
+            <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+              <div style={{ ...s.stepDot, width: 16, height: 16, fontSize: 8 }}>{i+1}</div>
+              <div style={{ fontSize: 11, color: 'rgba(165,180,252,0.8)' }}>{t}</div>
+            </div>
+          ))}
         </div>
+        <button style={{ ...s.btnGrad, opacity: igInput ? 1 : 0.4 }} onClick={register}>Начать</button>
       </div>
-      <button
-        onClick={register}
-        className={`w-full rounded-2xl p-4 font-medium text-base ${igInput ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-400'}`}
-      >Начать</button>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <div className="flex-1 overflow-auto p-4 pb-28">
+    <div style={s.page}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 72 }}>
 
-        <div className="bg-white rounded-2xl p-4 mb-4 flex justify-between items-center">
+        <div style={{ ...s.header(tab === 'boost' ? BLUE : PURPLE), display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div className="text-xs text-gray-400 mb-1">Баланс</div>
-            <div className="text-2xl font-bold">{user.balance} <span className="text-blue-500">₢</span></div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>Баланс</div>
+            <div style={{ fontSize: 26, fontWeight: 800, color: '#fff' }}>{user.balance} <span style={{ fontSize: 16, opacity: 0.8 }}>₢</span></div>
           </div>
-          <div className="text-right">
-            <div className="text-xs text-gray-500 font-medium">{user.igUsername}</div>
-            <div className="text-xs text-gray-400 mt-1">Заданий: {user.completedTasks}</div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ background: 'rgba(168,85,247,0.3)', color: '#c084fc', borderRadius: 8, padding: '3px 10px', fontSize: 10, fontWeight: 600, marginBottom: 4 }}>Новичок</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>{user.igUsername}</div>
           </div>
         </div>
 
         {tab === 'tasks' && (
-          <div>
-            {taskDone && (
-              <div className="bg-green-50 border border-green-100 rounded-2xl p-4 mb-4 text-center">
-                <div className="text-green-600 font-medium mb-1">+15 ₢ начислено!</div>
-                <div className="text-xs text-green-500 mb-2">Задание выполнено успешно</div>
-                <button onClick={() => setTaskDone(false)} className="text-xs text-green-600 underline">Следующее задание</button>
+          <>
+            {taskDone ? (
+              <div style={{ ...s.card, background: 'rgba(74,222,128,0.1)', border: '0.5px solid rgba(74,222,128,0.2)', textAlign: 'center', padding: 20 }}>
+                <div style={{ fontSize: 28, marginBottom: 6 }}>🎉</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#4ade80', marginBottom: 4 }}>+15 ₢ начислено!</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>Задание выполнено успешно</div>
+                <button style={{ ...s.btnGrad, margin: 0, width: '100%' }} onClick={() => setTaskDone(false)}>Следующее задание</button>
               </div>
-            )}
-            {!taskDone && (
+            ) : (
               <>
-                <div className="font-semibold text-base mb-3">Следующее задание</div>
-                <div className="bg-white rounded-2xl overflow-hidden mb-4 border border-gray-100">
-                  <div className="p-4 border-b border-gray-50">
-                    <div className="text-3xl font-bold text-green-500 mb-1">+15 ₢</div>
-                    <div className="text-xs text-gray-400">за выполнение задания</div>
-                  </div>
-                  <div className="p-3 text-xs text-gray-400 flex justify-between">
-                    <span>18 мест осталось</span><span>~5 минут</span>
-                  </div>
+                <div style={s.card}>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: '#4ade80', marginBottom: 2 }}>+15 ₢</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>за выполнение задания</div>
+                  {['Открой Reels по ссылке', 'Досмотри до конца 3 раза', 'Лайк, сохранение, сторис, отправь другу', 'Оставь комментарий в Instagram'].map((step, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'flex-start' }}>
+                      <div style={s.stepDot}>{i+1}</div>
+                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', paddingTop: 2 }}>{step}</div>
+                    </div>
+                  ))}
                 </div>
-                <div className="bg-white rounded-2xl p-4 mb-4 border border-gray-100">
-                  <div className="text-sm font-medium mb-3">Шаги выполнения</div>
-                  <div className="space-y-3">
-                    {['Открой Reels по ссылке', 'Досмотри до конца 3 раза', 'Лайк, сохранение, сторис, отправь другу', 'Оставь комментарий в Instagram'].map((s, i) => (
-                      <div key={i} className="flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center font-medium flex-shrink-0">{i+1}</div>
-                        <div className="text-sm text-gray-600">{s}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <button className="w-full bg-blue-500 text-white rounded-2xl p-4 font-medium mb-3">Открыть Reels</button>
-                <div className="bg-blue-50 rounded-2xl p-4 mb-3 border border-blue-100">
-                  <div className="text-sm font-medium text-blue-700 mb-1">Вставь свой комментарий</div>
-                  <div className="text-xs text-blue-500">Написанный в Instagram — минимум 10 слов. ИИ проверит.</div>
+                <button style={s.btnGrad}>Открыть Reels</button>
+                <div style={{ background: 'rgba(99,102,241,0.12)', borderRadius: 14, margin: '0 12px 8px', padding: 12, border: '0.5px solid rgba(99,102,241,0.25)' }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#a5b4fc', marginBottom: 3 }}>Вставь свой комментарий</div>
+                  <div style={{ fontSize: 10, color: 'rgba(165,180,252,0.7)' }}>Написанный в Instagram — минимум 10 слов. ИИ проверит.</div>
                 </div>
                 <textarea
-                  className="w-full border border-gray-200 rounded-2xl p-4 text-sm mb-1 h-24 outline-none focus:border-blue-400"
-                  onChange={e => countWords(e.target.value)}
+                  style={{ ...s.input, margin: '0 12px 4px', width: 'calc(100% - 24px)', height: 80, resize: 'none', padding: 12 }}
+                  value={comment}
+                  onChange={e => { setComment(e.target.value); setWordCount(e.target.value.trim().split(/\s+/).filter(w => w).length) }}
                 />
-                <div className={`text-xs text-right mb-3 ${wordCount >= 10 ? 'text-green-500' : 'text-gray-400'}`}>{wordCount} / 10 слов</div>
-                <button
-                  disabled={wordCount < 10}
-                  onClick={completeTask}
-                  className={`w-full rounded-2xl p-4 font-medium ${wordCount >= 10 ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'}`}
-                >Отправить на проверку — получить 15 ₢</button>
+                <div style={{ fontSize: 10, textAlign: 'right', margin: '0 12px 8px', color: wordCount >= 10 ? '#4ade80' : 'rgba(255,255,255,0.3)' }}>{wordCount} / 10 слов</div>
+                <button style={{ ...s.btnGrad, opacity: wordCount >= 10 ? 1 : 0.35 }} onClick={completeTask}>Отправить на проверку — получить 15 ₢</button>
               </>
             )}
 
-            <div className="bg-white rounded-2xl p-4 mt-4 border border-gray-100">
-              <div className="text-sm font-medium mb-3">Моя статистика</div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-gray-50 rounded-xl p-3">
-                  <div className="text-xs text-gray-400">Заданий</div>
-                  <div className="text-xl font-bold">{user.completedTasks}</div>
-                </div>
-                <div className="bg-gray-50 rounded-xl p-3">
-                  <div className="text-xs text-gray-400">Заработано</div>
-                  <div className="text-xl font-bold text-green-500">{user.earnedTotal} ₢</div>
-                </div>
-                <div className="bg-gray-50 rounded-xl p-3">
-                  <div className="text-xs text-gray-400">Потрачено</div>
-                  <div className="text-xl font-bold text-blue-500">{user.spentTotal} ₢</div>
-                </div>
-                <div className="bg-gray-50 rounded-xl p-3">
-                  <div className="text-xs text-gray-400">Приглашено</div>
-                  <div className="text-xl font-bold text-purple-500">{user.referrals}</div>
-                </div>
+            <div style={s.card}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10 }}>Статистика</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                {[
+                  { label: 'Заданий', value: user.completedTasks, color: '#fff' },
+                  { label: 'Заработано', value: `${user.earnedTotal} ₢`, color: '#4ade80' },
+                  { label: 'Потрачено', value: `${user.spentTotal} ₢`, color: '#818cf8' },
+                  { label: 'Приглашено', value: user.referrals, color: '#c084fc' },
+                ].map((item, i) => (
+                  <div key={i} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 10, border: '0.5px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', marginBottom: 3 }}>{item.label}</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: item.color }}>{item.value}</div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-4 mt-4 border border-gray-100">
-              <div className="text-sm font-medium mb-1">Пригласи друга</div>
-              <div className="text-xs text-gray-400 mb-3">Ты и друг получите по <span className="text-green-500 font-medium">+20 ₢</span></div>
-              <div className="bg-gray-50 rounded-xl p-3 flex justify-between items-center gap-2 mb-2">
-                <div className="text-xs text-gray-500 truncate">t.me/{botName}?start={user.referralCode}</div>
-                <button
-                  onClick={copyReferral}
-                  className={`text-xs font-medium whitespace-nowrap px-3 py-1.5 rounded-lg ${copied ? 'bg-green-500 text-white' : 'bg-blue-500 text-white'}`}
-                >{copied ? 'Скопировано!' : 'Копировать'}</button>
+            <div style={s.card}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 4 }}>Пригласи друга</div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 10 }}>Ты и друг получите по <span style={{ color: '#4ade80', fontWeight: 600 }}>+20 ₢</span></div>
+              <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: 10, padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>t.me/reelsboost_bot?start={user.referralCode}</div>
+                <button onClick={copyReferral} style={{ background: copied ? '#4ade80' : PURPLE, border: 'none', borderRadius: 8, padding: '5px 10px', fontSize: 10, fontWeight: 600, color: '#fff', cursor: 'pointer', marginLeft: 8, flexShrink: 0 }}>
+                  {copied ? 'Скопировано' : 'Копировать'}
+                </button>
               </div>
-              <div className="text-xs text-gray-400 text-center">Приглашено друзей: <span className="font-medium text-purple-500">{user.referrals}</span></div>
             </div>
-          </div>
+          </>
         )}
 
         {tab === 'boost' && (
-          <div>
-            <div className="font-semibold text-base mb-3">Продвинуть мой Reels</div>
-            <div className="bg-white rounded-2xl p-4 mb-4 border border-gray-100">
-              <div className="text-sm font-medium mb-2">Ссылка на Reels</div>
-              <input
-                className="w-full border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-blue-400"
-                placeholder="https://instagram.com/reel/..."
-                value={reelsUrl}
-                onChange={e => setReelsUrl(e.target.value)}
-              />
+          <>
+            <div style={s.card}>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>Ссылка на Reels</div>
+              <input style={s.input} placeholder="https://instagram.com/reel/..." value={reelsUrl} onChange={e => setReelsUrl(e.target.value)} />
             </div>
-            <div className="bg-white rounded-2xl p-4 mb-4 border border-gray-100">
-              <div className="flex justify-between items-center">
+            <div style={s.card}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div className="text-sm font-medium">Участников</div>
-                  <div className="text-xs text-gray-400 mt-0.5">Стоимость: {Math.ceil(slots * 1.5)} ₢</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>Участников</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>Стоимость: {Math.ceil(slots * 1.5)} ₢</div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <button onClick={() => setSlots(s => Math.max(10, s-5))} className="w-9 h-9 rounded-xl border border-gray-200 text-lg font-medium">-</button>
-                  <div className="font-bold text-lg w-8 text-center">{slots}</div>
-                  <button onClick={() => setSlots(s => Math.min(100, s+5))} className="w-9 h-9 rounded-xl border border-gray-200 text-lg font-medium">+</button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <button onClick={() => setSlots(s => Math.max(10, s-5))} style={{ width: 32, height: 32, borderRadius: 10, border: '0.5px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#fff', fontSize: 18, cursor: 'pointer' }}>-</button>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', width: 24, textAlign: 'center' }}>{slots}</div>
+                  <button onClick={() => setSlots(s => Math.min(100, s+5))} style={{ width: 32, height: 32, borderRadius: 10, border: '0.5px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#fff', fontSize: 18, cursor: 'pointer' }}>+</button>
                 </div>
               </div>
             </div>
             {user.balance < Math.ceil(slots * 1.5) && (
-              <div className="bg-red-50 rounded-2xl p-4 text-sm text-red-500 mb-4 text-center border border-red-100">
-                Недостаточно Credits. Выполни задания чтобы заработать.
+              <div style={{ ...s.card, background: 'rgba(239,68,68,0.1)', border: '0.5px solid rgba(239,68,68,0.2)', textAlign: 'center' }}>
+                <div style={{ fontSize: 11, color: '#f87171' }}>Недостаточно Credits — выполни задания чтобы заработать</div>
               </div>
             )}
-            <button
-              disabled={user.balance < Math.ceil(slots * 1.5) || !reelsUrl}
-              onClick={launchBoost}
-              className={`w-full rounded-2xl p-4 font-medium ${user.balance >= Math.ceil(slots * 1.5) && reelsUrl ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-400'}`}
-            >Запустить продвижение</button>
-          </div>
+            <button style={{ ...s.btnGrad, opacity: user.balance >= Math.ceil(slots * 1.5) && reelsUrl ? 1 : 0.35 }} onClick={launchBoost}>Запустить продвижение</button>
+          </>
         )}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex">
-        <button onClick={() => setTab('tasks')} className={`flex-1 py-3 text-xs font-medium flex flex-col items-center gap-1 ${tab === 'tasks' ? 'text-blue-500' : 'text-gray-400'}`}>
-          <span className="text-xl">📋</span>Задания
-        </button>
-        <button onClick={() => setTab('boost')} className={`flex-1 py-3 text-xs font-medium flex flex-col items-center gap-1 ${tab === 'boost' ? 'text-blue-500' : 'text-gray-400'}`}>
-          <span className="text-xl">🚀</span>Мой Reels
-        </button>
+      <div style={s.navBar}>
+        {[
+          { id: 'tasks', icon: 'ti-list', label: 'Задания' },
+          { id: 'boost', icon: 'ti-rocket', label: 'Мой Reels' },
+        ].map(item => (
+          <button key={item.id} onClick={() => setTab(item.id)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, background: 'transparent', border: 'none', cursor: 'pointer', color: tab === item.id ? '#a855f7' : 'rgba(255,255,255,0.35)', fontSize: 10, fontWeight: 500 }}>
+            <i className={`ti ${item.icon}`} style={{ fontSize: 20 }} aria-hidden="true"></i>
+            {item.label}
+          </button>
+        ))}
       </div>
     </div>
   )
