@@ -100,7 +100,11 @@ export default function Home() {
   }
 
   const openReels = () => {
-    window.open(currentTask.url, '_blank')
+    if (window.Telegram?.WebApp) {
+      window.Telegram.WebApp.openLink(currentTask.url)
+    } else {
+      window.open(currentTask.url, '_blank')
+    }
     setReelsOpened(true)
     setTimer(0)
     setTimerActive(true)
