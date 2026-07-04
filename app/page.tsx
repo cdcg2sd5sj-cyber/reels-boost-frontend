@@ -100,14 +100,11 @@ export default function Home() {
   }
 
   const openReels = () => {
-    if (window.Telegram?.WebApp) {
-      window.Telegram.WebApp.openLink(currentTask.url)
-    } else {
-      if (window.Telegram?.WebApp) {
-      window.Telegram.WebApp.openLink(currentTask.url)
+    const tg = (window as any).Telegram?.WebApp
+    if (tg) {
+      tg.openLink(currentTask.url)
     } else {
       window.open(currentTask.url, '_blank')
-    }
     }
     setReelsOpened(true)
     setTimer(0)
@@ -223,7 +220,6 @@ export default function Home() {
     <div style={{ ...s.page, justifyContent: 'center' }}>
       
         <img src="/banner.jpg" style={{ width: '100%', display: 'block', borderRadius: '0 0 16px 16px' }} alt="Reels Boost" />
-      </div>
       <div style={{ padding: '20px 16px', flex: 1 }}>
         <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>Твой Instagram</div>
         <input style={{ ...s.input, marginBottom: 8 }} placeholder="@username" value={igInput} onChange={e => setIgInput(e.target.value)} />
