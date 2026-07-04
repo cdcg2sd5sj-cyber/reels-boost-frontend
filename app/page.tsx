@@ -241,9 +241,9 @@ export default function Home() {
   const s = {
     page: { minHeight: '100vh', background: '#0f0f1a', display: 'flex', flexDirection: 'column' as const },
     card: { background: 'rgba(255,255,255,0.07)', borderRadius: 16, margin: '8px 12px', padding: 14, border: '0.5px solid rgba(255,255,255,0.1)' },
-    input: { width: '100%', background: 'rgba(255,255,255,0.07)', border: '0.5px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '10px 12px', fontSize: 15, color: '#fff', outline: 'none' },
-    btnGrad: (grad: string, opacity = 1) => ({ background: grad, borderRadius: 14, padding: '13px 16px', textAlign: 'center' as const, fontSize: 16, fontWeight: 700, color: '#fff', margin: '8px 12px', cursor: opacity < 1 ? 'default' : 'pointer', border: 'none', width: 'calc(100% - 24px)', opacity, display: 'block' }),
-    stepDot: { width: 20, height: 20, borderRadius: '50%', background: PURPLE, color: '#fff', fontSize: 15, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+    input: { width: '100%', background: 'rgba(255,255,255,0.07)', border: '0.5px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '10px 12px', fontSize: 13, color: '#fff', outline: 'none' },
+    btnGrad: (grad: string, opacity = 1) => ({ background: grad, borderRadius: 14, padding: '13px 16px', textAlign: 'center' as const, fontSize: 14, fontWeight: 700, color: '#fff', margin: '8px 12px', cursor: opacity < 1 ? 'default' : 'pointer', border: 'none', width: 'calc(100% - 24px)', opacity, display: 'block' }),
+    stepDot: { width: 20, height: 20, borderRadius: '50%', background: PURPLE, color: '#fff', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
     navBar: { background: '#1a1a2e', borderTop: '0.5px solid rgba(255,255,255,0.08)', display: 'flex', position: 'fixed' as const, bottom: 0, left: 0, right: 0, height: 60 },
   }
 
@@ -252,15 +252,15 @@ export default function Home() {
       
         <img src="/banner.jpg" style={{ width: '100%', display: 'block', borderRadius: '0 0 16px 16px' }} alt="Reels Boost" />
       <div style={{ padding: '20px 16px', flex: 1 }}>
-        <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>Твой Instagram</div>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>Твой Instagram</div>
         <input style={{ ...s.input, marginBottom: 8 }} placeholder="@username" value={igInput} onChange={e => setIgInput(e.target.value)} />
-        <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.3)', marginBottom: 20 }}>Открытый аккаунт, старше 30 дней, от 100 подписчиков</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 20 }}>Открытый аккаунт, старше 30 дней, от 100 подписчиков</div>
         <div style={{ background: 'rgba(99,102,241,0.15)', borderRadius: 14, padding: 14, marginBottom: 24, border: '0.5px solid rgba(99,102,241,0.25)' }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: '#a5b4fc', marginBottom: 8 }}>Как это работает</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#a5b4fc', marginBottom: 8 }}>Как это работает</div>
           {['Выполняй задания — зарабатывай Credits', 'Трать Credits на продвижение Reels', 'Получай живую активность от реальных людей'].map((t, i) => (
             <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
               <div style={{ ...s.stepDot, width: 16, height: 16, fontSize: 8 }}>{i+1}</div>
-              <div style={{ fontSize: 15, color: 'rgba(165,180,252,0.8)' }}>{t}</div>
+              <div style={{ fontSize: 11, color: 'rgba(165,180,252,0.8)' }}>{t}</div>
             </div>
           ))}
         </div>
@@ -279,17 +279,17 @@ export default function Home() {
         <div style={{ background: "#0f0f1a", padding: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>Баланс</div>
-              <div style={{ fontSize: 32, fontWeight: 800, color: '#fff' }}>{user.balance} <span style={{ fontSize: 16, opacity: 0.7 }}>₢</span></div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>Баланс</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: '#fff' }}>{user.balance} <span style={{ fontSize: 16, opacity: 0.7 }}>₢</span></div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 20, padding: '4px 10px', fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 3 }}>{level.name}</div>
-              <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.6)' }}>{user.igUsername}</div>
+              <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 20, padding: '4px 10px', fontSize: 10, fontWeight: 700, color: '#fff', marginBottom: 3 }}>{level.name}</div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)' }}>{user.igUsername}</div>
             </div>
           </div>
           {level.next && (
             <div style={{ marginTop: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, color: 'rgba(255,255,255,0.5)', marginBottom: 4 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'rgba(255,255,255,0.5)', marginBottom: 4 }}>
                 <span>{user.completedTasks} заданий</span>
                 <span>до {level.next} — следующий уровень</span>
               </div>
@@ -301,8 +301,8 @@ export default function Home() {
           {user.streak > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, background: 'rgba(255,255,255,0.15)', borderRadius: 10, padding: '5px 10px', width: 'fit-content' }}>
               <span style={{ fontSize: 14 }}>🔥</span>
-              <span style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>{user.streak} дней подряд</span>
-              {user.streak % 7 !== 0 && <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)' }}>до бонуса: {7 - (user.streak % 7)} дн.</span>}
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>{user.streak} дней подряд</span>
+              {user.streak % 7 !== 0 && <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)' }}>до бонуса: {7 - (user.streak % 7)} дн.</span>}
             </div>
           )}
         </div>
@@ -311,17 +311,17 @@ export default function Home() {
           <>
             {streakBonus && (
               <div style={{ ...s.card, background: 'rgba(245,158,11,0.15)', border: '0.5px solid rgba(245,158,11,0.3)', textAlign: 'center', padding: 20 }}>
-                <div style={{ fontSize: 32, marginBottom: 6 }}>🔥</div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: '#f59e0b', marginBottom: 4 }}>Стрик-бонус!</div>
-                <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>7 дней подряд — +30 Credits!</div>
+                <div style={{ fontSize: 28, marginBottom: 6 }}>🔥</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#f59e0b', marginBottom: 4 }}>Стрик-бонус!</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>7 дней подряд — +30 Credits!</div>
                 <button style={s.btnGrad(PURPLE)} onClick={() => setStreakBonus(false)}>Отлично!</button>
               </div>
             )}
             {taskDone && !streakBonus && (
               <div style={{ ...s.card, background: 'rgba(74,222,128,0.1)', border: '0.5px solid rgba(74,222,128,0.2)', textAlign: 'center', padding: 20 }}>
-                <div style={{ fontSize: 32, marginBottom: 6 }}>🎉</div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: '#4ade80', marginBottom: 4 }}>+15 ₢ начислено!</div>
-                <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>Стрик: {user.streak} дней 🔥</div>
+                <div style={{ fontSize: 28, marginBottom: 6 }}>🎉</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#4ade80', marginBottom: 4 }}>+15 ₢ начислено!</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>Стрик: {user.streak} дней 🔥</div>
                 <button style={s.btnGrad(PURPLE)} onClick={() => setTaskDone(false)}>Следующее задание</button>
               </div>
             )}
@@ -329,21 +329,21 @@ export default function Home() {
               allTasksDone ? (
                 <div style={{ ...s.card, textAlign: 'center', padding: 30 }}>
                   <div style={{ fontSize: 32, marginBottom: 8 }}>🎉</div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Все задания выполнены!</div>
-                  <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>Новые появятся скоро. Запусти свой Reels!</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Все задания выполнены!</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>Новые появятся скоро. Запусти свой Reels!</div>
                   <button style={s.btnGrad(BLUE)} onClick={() => setTab('boost')}>Продвинуть мой Reels</button>
                 </div>
               ) : (
                 <>
                   <div style={s.card}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                      <div style={{ fontSize: 26, fontWeight: 800, color: '#4ade80' }}>+15 ₢</div>
-                      <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.3)' }}>задание {(user.completedTaskIds||[]).length + 1} из {STARTER_TASKS.length}</div>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: '#4ade80' }}>+15 ₢</div>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>задание {(user.completedTaskIds||[]).length + 1} из {STARTER_TASKS.length}</div>
                     </div>
                     {['Открой Reels по ссылке', 'Досмотри до конца 3 раза', 'Лайк, сохранение, сторис, отправь другу', 'Оставь комментарий в Instagram'].map((step, i) => (
                       <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'flex-start' }}>
                         <div style={s.stepDot}>{i+1}</div>
-                        <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.75)', paddingTop: 2 }}>{step}</div>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', paddingTop: 2 }}>{step}</div>
                       </div>
                     ))}
                   </div>
@@ -356,8 +356,8 @@ export default function Home() {
                     <>
                       {!timerReady && (
                         <div style={{ ...s.card, textAlign: 'center', padding: 16 }}>
-                          <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>Смотри ролик...</div>
-                          <div style={{ fontSize: 32, fontWeight: 800, color: '#fff', marginBottom: 8 }}>{REQUIRED_SECONDS - timer}с</div>
+                          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>Смотри ролик...</div>
+                          <div style={{ fontSize: 28, fontWeight: 800, color: '#fff', marginBottom: 8 }}>{REQUIRED_SECONDS - timer}с</div>
                           <div style={{ height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 6 }}>
                             <div style={{ height: '100%', width: `${timerPercent}%`, background: PURPLE, borderRadius: 6, transition: 'width 1s linear' }}></div>
                           </div>
@@ -366,17 +366,17 @@ export default function Home() {
                       {timerReady && (
                         <>
                           <div style={{ background: 'rgba(99,102,241,0.12)', borderRadius: 14, margin: '0 12px 8px', padding: 12, border: '0.5px solid rgba(99,102,241,0.25)' }}>
-                            <div style={{ fontSize: 15, fontWeight: 600, color: '#a5b4fc', marginBottom: 3 }}>Вставь свой комментарий</div>
-                            <div style={{ fontSize: 16, color: 'rgba(165,180,252,0.7)' }}>Написанный в Instagram — минимум 10 слов. ИИ проверит.</div>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: '#a5b4fc', marginBottom: 3 }}>Вставь свой комментарий</div>
+                            <div style={{ fontSize: 10, color: 'rgba(165,180,252,0.7)' }}>Написанный в Instagram — минимум 10 слов. ИИ проверит.</div>
                           </div>
                           <textarea
                             style={{ ...s.input, margin: '0 12px 4px', width: 'calc(100% - 24px)', height: 80, resize: 'none', padding: 12 }}
                             value={comment}
                             onChange={e => { setComment(e.target.value); setWordCount(e.target.value.trim().split(/\s+/).filter((w: string) => w).length) }}
                           />
-                          <div style={{ fontSize: 16, textAlign: 'right', margin: '0 12px 4px', color: wordCount >= 10 ? '#4ade80' : 'rgba(255,255,255,0.3)' }}>{wordCount} / 10 слов</div>
+                          <div style={{ fontSize: 10, textAlign: 'right', margin: '0 12px 4px', color: wordCount >= 10 ? '#4ade80' : 'rgba(255,255,255,0.3)' }}>{wordCount} / 10 слов</div>
                           {checkError && (
-                            <div style={{ margin: '0 12px 8px', background: 'rgba(239,68,68,0.1)', border: '0.5px solid rgba(239,68,68,0.2)', borderRadius: 10, padding: '8px 12px', fontSize: 15, color: '#f87171' }}>{checkError}</div>
+                            <div style={{ margin: '0 12px 8px', background: 'rgba(239,68,68,0.1)', border: '0.5px solid rgba(239,68,68,0.2)', borderRadius: 10, padding: '8px 12px', fontSize: 11, color: '#f87171' }}>{checkError}</div>
                           )}
                           <button
                             style={s.btnGrad(wordCount >= 10 && !checking ? PURPLE : 'rgba(255,255,255,0.1)', wordCount >= 10 && !checking ? 1 : 0.5)}
@@ -397,14 +397,14 @@ export default function Home() {
         {tab === 'boost' && (
           <>
             <div style={s.card}>
-              <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>Ссылка на Reels</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>Ссылка на Reels</div>
               <input style={s.input} placeholder="https://instagram.com/reel/..." value={reelsUrl} onChange={e => setReelsUrl(e.target.value)} />
             </div>
             <div style={s.card}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>Участников</div>
-                  <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>Стоимость: {slots * 15} ₢</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>Участников</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>Стоимость: {slots * 15} ₢</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <button onClick={() => setSlots(s => Math.max(10, s-5))} style={{ width: 32, height: 32, borderRadius: 10, border: '0.5px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#fff', fontSize: 18, cursor: 'pointer' }}>-</button>
@@ -415,19 +415,19 @@ export default function Home() {
             </div>
             {user.balance < slots * 15 && (
               <div style={{ ...s.card, background: 'rgba(239,68,68,0.1)', border: '0.5px solid rgba(239,68,68,0.2)', textAlign: 'center' }}>
-                <div style={{ fontSize: 15, color: '#f87171' }}>Недостаточно Credits — выполни задания</div>
+                <div style={{ fontSize: 11, color: '#f87171' }}>Недостаточно Credits — выполни задания</div>
               </div>
             )}
             <button style={s.btnGrad(BLUE, user.balance >= slots * 15 && reelsUrl ? 1 : 0.35)} onClick={launchBoost}>Запустить продвижение</button>
             {user.boosts.length > 0 && (
               <div style={s.card}>
-                <div style={{ fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10 }}>История продвижений</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10 }}>История продвижений</div>
                 {user.boosts.map((b, i) => (
                   <div key={i} style={{ padding: '10px 0', borderBottom: i < user.boosts.length - 1 ? '0.5px solid rgba(255,255,255,0.06)' : 'none' }}>
-                    <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)', marginBottom: 3 }}>{b.date}</div>
-                    <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.url}</div>
+                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 3 }}>{b.date}</div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.url}</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)' }}>Участников: {b.filled} / {b.slots}</div>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>Участников: {b.filled} / {b.slots}</div>
                       <div style={{ height: 4, width: 80, background: 'rgba(255,255,255,0.1)', borderRadius: 4 }}>
                         <div style={{ height: '100%', width: `${Math.round((b.filled/b.slots)*100)}%`, background: BLUE, borderRadius: 4 }}></div>
                       </div>
@@ -442,7 +442,7 @@ export default function Home() {
         {tab === 'stats' && (
           <>
             <div style={s.card}>
-              <div style={{ fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10 }}>Мой прогресс</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10 }}>Мой прогресс</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 {[
                   { label: 'Заданий', value: user.completedTasks, color: '#fff' },
@@ -453,24 +453,24 @@ export default function Home() {
                   { label: 'Уровень', value: level.name, color: level.color },
                 ].map((item, i) => (
                   <div key={i} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 10, border: '0.5px solid rgba(255,255,255,0.06)' }}>
-                    <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', marginBottom: 3 }}>{item.label}</div>
+                    <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', marginBottom: 3 }}>{item.label}</div>
                     <div style={{ fontSize: 16, fontWeight: 700, color: item.color }}>{item.value}</div>
                   </div>
                 ))}
               </div>
             </div>
             <div style={s.card}>
-              <div style={{ fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 4 }}>Пригласи друга</div>
-              <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)', marginBottom: 10 }}>Ты и друг получите по <span style={{ color: '#4ade80', fontWeight: 600 }}>+20 ₢</span></div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 4 }}>Пригласи друга</div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 10 }}>Ты и друг получите по <span style={{ color: '#4ade80', fontWeight: 600 }}>+20 ₢</span></div>
               <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: 10, padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>t.me/reelsboost_bot?start={user.referralCode}</div>
-                <button onClick={copyReferral} style={{ background: copied ? '#4ade80' : PURPLE, border: 'none', borderRadius: 8, padding: '5px 10px', fontSize: 16, fontWeight: 600, color: '#fff', cursor: 'pointer', marginLeft: 8, flexShrink: 0 }}>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>t.me/reelsboost_bot?start={user.referralCode}</div>
+                <button onClick={copyReferral} style={{ background: copied ? '#4ade80' : PURPLE, border: 'none', borderRadius: 8, padding: '5px 10px', fontSize: 10, fontWeight: 600, color: '#fff', cursor: 'pointer', marginLeft: 8, flexShrink: 0 }}>
                   {copied ? 'Скопировано' : 'Копировать'}
                 </button>
               </div>
             </div>
             <div style={s.card}>
-              <div style={{ fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10 }}>Уровни</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10 }}>Уровни</div>
               {[
                 { name: 'Новичок', req: '0 заданий', color: '#6b7280' },
                 { name: 'Активный', req: '6 заданий', color: '#3b82f6' },
@@ -479,9 +479,9 @@ export default function Home() {
               ].map((l, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < 3 ? '0.5px solid rgba(255,255,255,0.05)' : 'none' }}>
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: l.color, flexShrink: 0 }}></div>
-                  <div style={{ fontSize: 16, fontWeight: 600, color: l.color, width: 90 }}>{l.name}</div>
-                  <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)' }}>{l.req}</div>
-                  {level.name === l.name && <div style={{ marginLeft: 'auto', fontSize: 15, background: 'rgba(255,255,255,0.1)', borderRadius: 6, padding: '2px 6px', color: '#fff' }}>Текущий</div>}
+                  <div style={{ fontSize: 12, fontWeight: 600, color: l.color, width: 90 }}>{l.name}</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>{l.req}</div>
+                  {level.name === l.name && <div style={{ marginLeft: 'auto', fontSize: 9, background: 'rgba(255,255,255,0.1)', borderRadius: 6, padding: '2px 6px', color: '#fff' }}>Текущий</div>}
                 </div>
               ))}
             </div>
@@ -495,7 +495,7 @@ export default function Home() {
           { id: "boost", icon: "ti-brand-instagram", label: "Мой Reels" },
           { id: "stats", icon: "ti-user-circle", label: "Профиль" },
         ].map(item => (
-          <button key={item.id} onClick={() => setTab(item.id)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, background: 'transparent', border: 'none', cursor: 'pointer', color: tab === item.id ? '#a855f7' : 'rgba(255,255,255,0.35)', fontSize: 16, fontWeight: 500 }}>
+          <button key={item.id} onClick={() => setTab(item.id)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, background: 'transparent', border: 'none', cursor: 'pointer', color: tab === item.id ? '#a855f7' : 'rgba(255,255,255,0.35)', fontSize: 10, fontWeight: 500 }}>
             <i className={`ti ${item.icon}`} style={{ fontSize: 20 }} aria-hidden="true"></i>
             {item.label}
           </button>
