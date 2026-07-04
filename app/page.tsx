@@ -277,14 +277,14 @@ export default function Home() {
     <div style={s.page}>
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 72 }}>
         <div style={{ background: "#0f0f1a", padding: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>Баланс</div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: '#fff' }}>{user.balance} <span style={{ fontSize: 16, opacity: 0.7 }}>₢</span></div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>Баланс</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{user.balance} <span style={{ fontSize: 14, opacity: 0.7 }}>₢</span></div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 20, padding: '4px 10px', fontSize: 10, fontWeight: 700, color: '#fff', marginBottom: 3 }}>{level.name}</div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)' }}>{user.igUsername}</div>
+              <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 20, padding: '3px 10px', fontSize: 10, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{level.name}</div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 100 }}>{user.igUsername}</div>
             </div>
           </div>
           {level.next && (
