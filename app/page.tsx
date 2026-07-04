@@ -91,8 +91,29 @@ export default function Home() {
     localStorage.setItem('reels_boost_user', JSON.stringify(data))
   }
 
-  const register = () => {
+  const [igChecking, setIgChecking] = useState(false)
+  const [igError, setIgError] = useState('')
+
+  const register = async () => {
     if (!igInput) return
+    setIgChecking(true)
+    setIgError('')
+
+    try {
+      const res = await fetch('/api/check-instagram', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: igInput })
+      })
+      const data = await res.json()
+      if (!data.valid) {
+        setIgError(data.reason)
+        setIgChecking(false)
+        return
+      }
+    } catch {
+      setIgChecking(false)
+    }
     saveUser({
       igUsername: igInput, balance: 10, completedTasks: 0,
       earnedTotal: 0, spentTotal: 0, referralCode: generateCode(igInput),
