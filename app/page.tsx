@@ -213,7 +213,7 @@ export default function Home() {
 
   if (!user) return (
     <div style={{ ...s.page, justifyContent: 'center' }}>
-      <div style={{ background: PURPLE, padding: '40px 24px 28px', textAlign: 'center' }}>
+      
         <div style={{ width: 56, height: 56, background: 'rgba(255,255,255,0.2)', borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: 26 }}>🚀</div>
         <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 4 }}>Reels Boost</div>
         <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>Комьюнити Instagram авторов</div>
