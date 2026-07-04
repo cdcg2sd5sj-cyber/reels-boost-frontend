@@ -218,9 +218,11 @@ export default function Home() {
     if (nextTask) setCurrentTask(nextTask)
   }
 
+  const PACKAGES = [{s:10,c:50},{s:25,c:100},{s:60,c:200},{s:200,c:500}]
+
   const launchBoost = () => {
     if (!user) return
-    const cost = slots * 15
+    const cost = PACKAGES.find(p => p.s === slots)?.c || 50
     if (user.balance < cost || !reelsUrl) return
     const newBoost: Boost = { url: reelsUrl, slots, filled: 0, date: new Date().toLocaleDateString('ru') }
     saveUser({ ...user, balance: user.balance - cost, spentTotal: user.spentTotal + cost, boosts: [newBoost, ...user.boosts] })
@@ -401,17 +403,26 @@ export default function Home() {
               <input style={s.input} placeholder="https://instagram.com/reel/..." value={reelsUrl} onChange={e => setReelsUrl(e.target.value)} />
             </div>
             <div style={s.card}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>Участников</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>Стоимость: {slots * 15} ₢</div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <button onClick={() => setSlots(s => Math.max(10, s-5))} style={{ width: 32, height: 32, borderRadius: 10, border: '0.5px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#fff', fontSize: 18, cursor: 'pointer' }}>-</button>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', width: 24, textAlign: 'center' }}>{slots}</div>
-                  <button onClick={() => setSlots(s => Math.min(100, s+5))} style={{ width: 32, height: 32, borderRadius: 10, border: '0.5px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#fff', fontSize: 18, cursor: 'pointer' }}>+</button>
-                </div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10 }}>Выбери пакет</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                {[
+                  { name: 'Мини', slots: 10, credits: 50, emoji: '🌱' },
+                  { name: 'Старт', slots: 25, credits: 100, emoji: '🚀' },
+                  { name: 'Буст', slots: 60, credits: 200, emoji: '⚡️' },
+                  { name: 'Макс', slots: 200, credits: 500, emoji: '🔥' },
+                ].map((pkg) => (
+                  <div key={pkg.name} onClick={() => setSlots(pkg.slots)} style={{ background: slots === pkg.slots ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.05)', border: slots === pkg.slots ? '0.5px solid rgba(99,102,241,0.6)' : '0.5px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 10, cursor: 'pointer', textAlign: 'center' as const }}>
+                    <div style={{ fontSize: 18, marginBottom: 4 }}>{pkg.emoji}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{pkg.name}</div>
+                    <div style={{ fontSize: 11, color: '#4ade80', fontWeight: 600 }}>{pkg.credits} ₢</div>
+                    <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{pkg.slots} участников</div>
+                  </div>
+                ))}
               </div>
+            </div>
+            <div style={{ ...s.card, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Спишется</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#a855f7' }}>{[{s:10,c:50},{s:25,c:100},{s:60,c:200},{s:200,c:500}].find(p=>p.s===slots)?.c || 50} ₢</div>
             </div>
             {user.balance < slots * 15 && (
               <div style={{ ...s.card, background: 'rgba(239,68,68,0.1)', border: '0.5px solid rgba(239,68,68,0.2)', textAlign: 'center' }}>
