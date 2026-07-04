@@ -184,7 +184,7 @@ export default function Home() {
 
   const launchBoost = () => {
     if (!user) return
-    const cost = Math.ceil(slots * 1.5)
+    const cost = slots * 15
     if (user.balance < cost || !reelsUrl) return
     const newBoost: Boost = { url: reelsUrl, slots, filled: 0, date: new Date().toLocaleDateString('ru') }
     saveUser({ ...user, balance: user.balance - cost, spentTotal: user.spentTotal + cost, boosts: [newBoost, ...user.boosts] })
@@ -371,7 +371,7 @@ export default function Home() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>Участников</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>Стоимость: {Math.ceil(slots * 1.5)} ₢</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>Стоимость: {slots * 15} ₢</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <button onClick={() => setSlots(s => Math.max(10, s-5))} style={{ width: 32, height: 32, borderRadius: 10, border: '0.5px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#fff', fontSize: 18, cursor: 'pointer' }}>-</button>
@@ -380,12 +380,12 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            {user.balance < Math.ceil(slots * 1.5) && (
+            {user.balance < slots * 15 && (
               <div style={{ ...s.card, background: 'rgba(239,68,68,0.1)', border: '0.5px solid rgba(239,68,68,0.2)', textAlign: 'center' }}>
                 <div style={{ fontSize: 11, color: '#f87171' }}>Недостаточно Credits — выполни задания</div>
               </div>
             )}
-            <button style={s.btnGrad(BLUE, user.balance >= Math.ceil(slots * 1.5) && reelsUrl ? 1 : 0.35)} onClick={launchBoost}>Запустить продвижение</button>
+            <button style={s.btnGrad(BLUE, user.balance >= slots * 15 && reelsUrl ? 1 : 0.35)} onClick={launchBoost}>Запустить продвижение</button>
             {user.boosts.length > 0 && (
               <div style={s.card}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10 }}>История продвижений</div>
