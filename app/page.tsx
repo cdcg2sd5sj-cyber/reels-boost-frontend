@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 const STARTER_TASKS = [
   { id: 1, url: 'https://www.instagram.com/reel/DYFKNNgsAkD/' },
@@ -27,6 +27,7 @@ interface UserData {
   lastTaskDate: string
   boosts: Boost[]
   completedTaskIds: number[]
+  lastComments: string[]
 }
 
 const PURPLE = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%)'
@@ -39,6 +40,8 @@ const getLevel = (tasks: number) => {
   if (tasks >= 6) return { name: 'Активный', color: '#3b82f6', next: 21 }
   return { name: 'Новичок', color: '#6b7280', next: 6 }
 }
+
+const REQUIRED_SECONDS = 60
 
 export default function Home() {
   const [user, setUser] = useState<UserData | null>(null)
@@ -53,6 +56,11 @@ export default function Home() {
   const [streakBonus, setStreakBonus] = useState(false)
   const [currentTask, setCurrentTask] = useState(STARTER_TASKS[0])
   const [reelsOpened, setReelsOpened] = useState(false)
+  const [timer, setTimer] = useState(0)
+  const [timerActive, setTimerActive] = useState(false)
+  const [checking, setChecking] = useState(false)
+  const [checkError, setCheckError] = useState('')
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     const saved = localStorage.getItem('reels_boost_user')
@@ -63,6 +71,15 @@ export default function Home() {
       if (next) setCurrentTask(next)
     }
   }, [])
+
+  useEffect(() => {
+    if (timerActive && timer < REQUIRED_SECONDS) {
+      timerRef.current = setTimeout(() => setTimer(t => t + 1), 1000)
+    } else if (timer >= REQUIRED_SECONDS) {
+      setTimerActive(false)
+    }
+    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
+  }, [timerActive, timer])
 
   const generateCode = (ig: string) =>
     ig.replace('@', '').toUpperCase().slice(0, 6) + Math.random().toString(36).slice(2, 4).toUpperCase()
@@ -77,17 +94,65 @@ export default function Home() {
     saveUser({
       igUsername: igInput, balance: 10, completedTasks: 0,
       earnedTotal: 0, spentTotal: 0, referralCode: generateCode(igInput),
-      referrals: 0, streak: 0, lastTaskDate: '', boosts: [], completedTaskIds: [],
+      referrals: 0, streak: 0, lastTaskDate: '', boosts: [],
+      completedTaskIds: [], lastComments: [],
     })
   }
 
   const openReels = () => {
     window.open(currentTask.url, '_blank')
     setReelsOpened(true)
+    setTimer(0)
+    setTimerActive(true)
+    setCheckError('')
   }
 
-  const completeTask = () => {
-    if (!user || wordCount < 10) return
+  const checkCommentWithAI = async (text: string, prevComments: string[]): Promise<boolean> => {
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 100,
+          messages: [{
+            role: 'user',
+            content: `Проверь комментарий к Instagram Reels. Ответь только YES или NO.
+
+Правила — комментарий плохой если:
+- Бессмысленный набор слов или просто эмодзи
+- Явный спам или шаблонный текст
+- Очень похож на один из предыдущих комментариев пользователя
+
+Предыдущие комментарии: ${prevComments.slice(-5).join(' | ')}
+
+Новый комментарий: "${text}"
+
+Ответ (YES = хороший, NO = плохой):`
+          }]
+        })
+      })
+      const data = await response.json()
+      const result = data.content?.[0]?.text?.trim() || 'NO'
+      return result.includes('YES')
+    } catch {
+      return true
+    }
+  }
+
+  const completeTask = async () => {
+    if (!user || wordCount < 10 || timer < REQUIRED_SECONDS) return
+    setChecking(true)
+    setCheckError('')
+
+    const isGood = await checkCommentWithAI(comment, user.lastComments || [])
+
+    if (!isGood) {
+      setCheckError('Комментарий не прошёл проверку. Напиши более осмысленный текст.')
+      setChecking(false)
+      return
+    }
+
     const today = new Date().toDateString()
     const yesterday = new Date(Date.now() - 86400000).toDateString()
     const newStreak = user.lastTaskDate === yesterday ? user.streak + 1 : user.lastTaskDate === today ? user.streak : 1
@@ -104,6 +169,7 @@ export default function Home() {
       streak: newStreak,
       lastTaskDate: today,
       completedTaskIds: newCompletedIds,
+      lastComments: [...(user.lastComments || []).slice(-9), comment],
     })
 
     if (isStreakBonus) setStreakBonus(true)
@@ -111,6 +177,8 @@ export default function Home() {
     setWordCount(0)
     setComment('')
     setReelsOpened(false)
+    setTimer(0)
+    setChecking(false)
     if (nextTask) setCurrentTask(nextTask)
   }
 
@@ -130,6 +198,9 @@ export default function Home() {
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
+
+  const timerReady = timer >= REQUIRED_SECONDS
+  const timerPercent = Math.min(100, Math.round((timer / REQUIRED_SECONDS) * 100))
 
   const s = {
     page: { minHeight: '100vh', background: '#0f0f1a', display: 'flex', flexDirection: 'column' as const },
@@ -226,8 +297,8 @@ export default function Home() {
                 <div style={{ ...s.card, textAlign: 'center', padding: 30 }}>
                   <div style={{ fontSize: 32, marginBottom: 8 }}>🎉</div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Все задания выполнены!</div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>Новые появятся скоро. Запусти свой Reels!</div>
-                  <button style={{ ...s.btnGrad(BLUE), marginTop: 12 }} onClick={() => setTab('boost')}>Продвинуть мой Reels</button>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>Новые появятся скоро. Запусти свой Reels!</div>
+                  <button style={s.btnGrad(BLUE)} onClick={() => setTab('boost')}>Продвинуть мой Reels</button>
                 </div>
               ) : (
                 <>
@@ -236,7 +307,6 @@ export default function Home() {
                       <div style={{ fontSize: 22, fontWeight: 800, color: '#4ade80' }}>+15 ₢</div>
                       <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>задание {(user.completedTaskIds||[]).length + 1} из {STARTER_TASKS.length}</div>
                     </div>
-                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>за выполнение задания</div>
                     {['Открой Reels по ссылке', 'Досмотри до конца 3 раза', 'Лайк, сохранение, сторис, отправь другу', 'Оставь комментарий в Instagram'].map((step, i) => (
                       <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'flex-start' }}>
                         <div style={s.stepDot}>{i+1}</div>
@@ -244,24 +314,45 @@ export default function Home() {
                       </div>
                     ))}
                   </div>
+
                   <button style={s.btnGrad(PURPLE)} onClick={openReels}>
                     {reelsOpened ? 'Открыть Reels снова' : 'Открыть Reels'}
                   </button>
+
                   {reelsOpened && (
                     <>
-                      <div style={{ background: 'rgba(99,102,241,0.12)', borderRadius: 14, margin: '0 12px 8px', padding: 12, border: '0.5px solid rgba(99,102,241,0.25)' }}>
-                        <div style={{ fontSize: 11, fontWeight: 600, color: '#a5b4fc', marginBottom: 3 }}>Вставь свой комментарий</div>
-                        <div style={{ fontSize: 10, color: 'rgba(165,180,252,0.7)' }}>Написанный в Instagram — минимум 10 слов. ИИ проверит.</div>
-                      </div>
-                      <textarea
-                        style={{ ...s.input, margin: '0 12px 4px', width: 'calc(100% - 24px)', height: 80, resize: 'none', padding: 12 }}
-                        value={comment}
-                        onChange={e => { setComment(e.target.value); setWordCount(e.target.value.trim().split(/\s+/).filter((w: string) => w).length) }}
-                      />
-                      <div style={{ fontSize: 10, textAlign: 'right', margin: '0 12px 8px', color: wordCount >= 10 ? '#4ade80' : 'rgba(255,255,255,0.3)' }}>{wordCount} / 10 слов</div>
-                      <button style={s.btnGrad(wordCount >= 10 ? PURPLE : 'rgba(255,255,255,0.1)', wordCount >= 10 ? 1 : 0.5)} onClick={completeTask}>
-                        Отправить на проверку — получить 15 ₢
-                      </button>
+                      {!timerReady && (
+                        <div style={{ ...s.card, textAlign: 'center', padding: 16 }}>
+                          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>Смотри ролик...</div>
+                          <div style={{ fontSize: 28, fontWeight: 800, color: '#fff', marginBottom: 8 }}>{REQUIRED_SECONDS - timer}с</div>
+                          <div style={{ height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 6 }}>
+                            <div style={{ height: '100%', width: `${timerPercent}%`, background: PURPLE, borderRadius: 6, transition: 'width 1s linear' }}></div>
+                          </div>
+                        </div>
+                      )}
+                      {timerReady && (
+                        <>
+                          <div style={{ background: 'rgba(99,102,241,0.12)', borderRadius: 14, margin: '0 12px 8px', padding: 12, border: '0.5px solid rgba(99,102,241,0.25)' }}>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: '#a5b4fc', marginBottom: 3 }}>Вставь свой комментарий</div>
+                            <div style={{ fontSize: 10, color: 'rgba(165,180,252,0.7)' }}>Написанный в Instagram — минимум 10 слов. ИИ проверит.</div>
+                          </div>
+                          <textarea
+                            style={{ ...s.input, margin: '0 12px 4px', width: 'calc(100% - 24px)', height: 80, resize: 'none', padding: 12 }}
+                            value={comment}
+                            onChange={e => { setComment(e.target.value); setWordCount(e.target.value.trim().split(/\s+/).filter((w: string) => w).length) }}
+                          />
+                          <div style={{ fontSize: 10, textAlign: 'right', margin: '0 12px 4px', color: wordCount >= 10 ? '#4ade80' : 'rgba(255,255,255,0.3)' }}>{wordCount} / 10 слов</div>
+                          {checkError && (
+                            <div style={{ margin: '0 12px 8px', background: 'rgba(239,68,68,0.1)', border: '0.5px solid rgba(239,68,68,0.2)', borderRadius: 10, padding: '8px 12px', fontSize: 11, color: '#f87171' }}>{checkError}</div>
+                          )}
+                          <button
+                            style={s.btnGrad(wordCount >= 10 && !checking ? PURPLE : 'rgba(255,255,255,0.1)', wordCount >= 10 && !checking ? 1 : 0.5)}
+                            onClick={completeTask}
+                          >
+                            {checking ? 'ИИ проверяет...' : 'Отправить на проверку — получить 15 ₢'}
+                          </button>
+                        </>
+                      )}
                     </>
                   )}
                 </>
