@@ -59,6 +59,8 @@ export default function Home() {
   const [timer, setTimer] = useState(0)
   const [timerActive, setTimerActive] = useState(false)
   const [checking, setChecking] = useState(false)
+  const [saveScreenshot, setSaveScreenshot] = useState<string>('')
+  const [commentScreenshot, setCommentScreenshot] = useState<string>('')
   const [checkError, setCheckError] = useState('')
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -150,7 +152,36 @@ export default function Home() {
     setChecking(true)
     setCheckError('')
 
-    const isGood = await checkCommentWithAI(comment, user.lastComments || [])
+    if (!saveScreenshot || !commentScreenshot) {
+      setCheckError('Загрузи оба скриншота — сохранения и комментария')
+      setChecking(false)
+      return
+    }
+
+    const verifyResponse = await fetch('/api/verify-screenshots', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        saveScreenshot,
+        commentScreenshot,
+        commentText: comment
+      })
+    })
+    const verifyResult = await verifyResponse.json()
+
+    if (!verifyResult.saveValid) {
+      setCheckError('Скриншот сохранения не прошёл проверку. ' + (verifyResult.reason || ''))
+      setChecking(false)
+      return
+    }
+
+    if (!verifyResult.commentValid) {
+      setCheckError('Скриншот комментария не прошёл проверку. ' + (verifyResult.reason || ''))
+      setChecking(false)
+      return
+    }
+
+    const isGood = true
 
     if (!isGood) {
       setCheckError('Комментарий не прошёл проверку. Напиши более осмысленный текст.')
