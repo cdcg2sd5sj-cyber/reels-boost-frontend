@@ -243,7 +243,7 @@ export default function Home() {
   return (
     <div style={s.page}>
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 72 }}>
-        <div style={{ background: tab === 'boost' ? BLUE : tab === 'stats' ? GREEN : PURPLE, padding: '20px 16px 16px' }}>
+        <div style={{ background: "#0f0f1a", padding: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>Баланс</div>
