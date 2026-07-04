@@ -94,7 +94,7 @@ export default function Home() {
   const [igChecking, setIgChecking] = useState(false)
   const [igError, setIgError] = useState('')
 
-  const register = async () => {
+  const register = () => {
     if (!igInput) return
     setIgChecking(true)
     setIgError('')
