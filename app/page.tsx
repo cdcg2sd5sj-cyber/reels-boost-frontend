@@ -1,9 +1,10 @@
 'use client'
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   login, getProfile, getNextTask, completeTaskApi, createCampaignApi, getMyCampaigns,
   tokenStorage, apiErrorMessage, Profile, NextTask, CampaignDto,
 } from './lib/api'
+import { fileToJpegBase64 } from './lib/image'
 
 const PURPLE = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%)'
 const BLUE = 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)'
@@ -41,17 +42,17 @@ export default function Home() {
   const [currentTask, setCurrentTask] = useState<NextTask | null>(null)
   const [taskLoading, setTaskLoading] = useState(true)
   const [reelsOpened, setReelsOpened] = useState(false)
-  const [timer, setTimer] = useState(0)
-  const [timerActive, setTimerActive] = useState(false)
+  const [openedAt, setOpenedAt] = useState<number | null>(null)
+  const [now, setNow] = useState<number>(() => Date.now())
   const [checking, setChecking] = useState(false)
   const [saveScreenshot, setSaveScreenshot] = useState<string>('')
   const [commentScreenshot, setCommentScreenshot] = useState<string>('')
+  const [uploadingSave, setUploadingSave] = useState(false)
+  const [uploadingComment, setUploadingComment] = useState(false)
   const [checkError, setCheckError] = useState('')
 
   const [campaigns, setCampaigns] = useState<CampaignDto[]>([])
   const [boostError, setBoostError] = useState('')
-
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
 
   // --- Авторизация ------------------------------------------------------
   useEffect(() => {
@@ -145,14 +146,27 @@ export default function Home() {
     }
   }, [authStatus, tab])
 
+  // Таймер считается по разнице реальных временных меток, а не "тиками":
+  // если Telegram сворачивает мини-апп, пока человек смотрит рилс в
+  // Instagram, обычный setInterval/setTimeout в фоне подтормаживается —
+  // а Date.now() после возврата сразу покажет честно прошедшее время.
   useEffect(() => {
-    if (timerActive && timer < REQUIRED_SECONDS) {
-      timerRef.current = setTimeout(() => setTimer(t => t + 1), 1000)
-    } else if (timer >= REQUIRED_SECONDS) {
-      setTimerActive(false)
+    if (!openedAt || now - openedAt >= REQUIRED_SECONDS * 1000) return
+    const interval = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(interval)
+  }, [openedAt, now])
+
+  useEffect(() => {
+    const recompute = () => setNow(Date.now())
+    document.addEventListener('visibilitychange', recompute)
+    window.addEventListener('focus', recompute)
+    window.addEventListener('pageshow', recompute)
+    return () => {
+      document.removeEventListener('visibilitychange', recompute)
+      window.removeEventListener('focus', recompute)
+      window.removeEventListener('pageshow', recompute)
     }
-    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
-  }, [timerActive, timer])
+  }, [])
 
   const openReels = () => {
     if (!currentTask) return
@@ -163,13 +177,29 @@ export default function Home() {
       window.open(currentTask.reelsUrl, '_blank')
     }
     setReelsOpened(true)
-    setTimer(0)
-    setTimerActive(true)
+    setOpenedAt(Date.now())
+    setNow(Date.now())
     setCheckError('')
   }
 
+  const handleScreenshotSelect = async (kind: 'save' | 'comment', file: File | null) => {
+    if (!file) return
+    const setBusy = kind === 'save' ? setUploadingSave : setUploadingComment
+    const setValue = kind === 'save' ? setSaveScreenshot : setCommentScreenshot
+    setBusy(true)
+    setCheckError('')
+    try {
+      const base64 = await fileToJpegBase64(file)
+      setValue(base64)
+    } catch {
+      setCheckError('Не удалось обработать изображение — попробуй другой файл')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const completeTask = async () => {
-    if (!profile || !currentTask || wordCount < 10 || timer < REQUIRED_SECONDS) return
+    if (!profile || !currentTask || wordCount < 10 || elapsedSeconds < REQUIRED_SECONDS) return
     setChecking(true)
     setCheckError('')
 
@@ -216,7 +246,7 @@ export default function Home() {
       setWordCount(0)
       setComment('')
       setReelsOpened(false)
-      setTimer(0)
+      setOpenedAt(null)
       setSaveScreenshot('')
       setCommentScreenshot('')
       await loadNextTask()
@@ -252,8 +282,9 @@ export default function Home() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const timerReady = timer >= REQUIRED_SECONDS
-  const timerPercent = Math.min(100, Math.round((timer / REQUIRED_SECONDS) * 100))
+  const elapsedSeconds = openedAt ? Math.min(REQUIRED_SECONDS, Math.floor((now - openedAt) / 1000)) : 0
+  const timerReady = elapsedSeconds >= REQUIRED_SECONDS
+  const timerPercent = Math.min(100, Math.round((elapsedSeconds / REQUIRED_SECONDS) * 100))
 
   const s = {
     page: { minHeight: '100vh', background: '#0f0f1a', display: 'flex', flexDirection: 'column' as const },
@@ -388,7 +419,7 @@ export default function Home() {
                       {!timerReady && (
                         <div style={{ ...s.card, textAlign: 'center', padding: 16 }}>
                           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>Смотри ролик...</div>
-                          <div style={{ fontSize: 28, fontWeight: 800, color: '#fff', marginBottom: 8 }}>{REQUIRED_SECONDS - timer}с</div>
+                          <div style={{ fontSize: 28, fontWeight: 800, color: '#fff', marginBottom: 8 }}>{REQUIRED_SECONDS - elapsedSeconds}с</div>
                           <div style={{ height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 6 }}>
                             <div style={{ height: '100%', width: `${timerPercent}%`, background: PURPLE, borderRadius: 6, transition: 'width 1s linear' }}></div>
                           </div>
@@ -406,11 +437,50 @@ export default function Home() {
                             onChange={e => { setComment(e.target.value); setWordCount(e.target.value.trim().split(/\s+/).filter((w: string) => w).length) }}
                           />
                           <div style={{ fontSize: 10, textAlign: 'right', margin: '0 12px 4px', color: wordCount >= 10 ? '#4ade80' : 'rgba(255,255,255,0.3)' }}>{wordCount} / 10 слов</div>
+
+                          <div style={{ display: 'flex', gap: 8, margin: '0 12px 8px' }}>
+                            {([
+                              { kind: 'save' as const, label: 'Скриншот сохранения', value: saveScreenshot, busy: uploadingSave },
+                              { kind: 'comment' as const, label: 'Скриншот комментария', value: commentScreenshot, busy: uploadingComment },
+                            ]).map(({ kind, label, value, busy }) => (
+                              <label
+                                key={kind}
+                                style={{
+                                  flex: 1, borderRadius: 12, padding: 10, textAlign: 'center', cursor: 'pointer',
+                                  background: value ? 'rgba(74,222,128,0.1)' : 'rgba(255,255,255,0.05)',
+                                  border: value ? '0.5px solid rgba(74,222,128,0.3)' : '0.5px dashed rgba(255,255,255,0.2)',
+                                }}
+                              >
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  style={{ display: 'none' }}
+                                  onChange={e => handleScreenshotSelect(kind, e.target.files?.[0] || null)}
+                                />
+                                {value ? (
+                                  <img
+                                    src={`data:image/jpeg;base64,${value}`}
+                                    style={{ width: '100%', height: 60, objectFit: 'cover', borderRadius: 8, marginBottom: 6 }}
+                                    alt={label}
+                                  />
+                                ) : (
+                                  <div style={{ fontSize: 20, marginBottom: 6 }}>📎</div>
+                                )}
+                                <div style={{ fontSize: 10, color: value ? '#4ade80' : 'rgba(255,255,255,0.5)' }}>
+                                  {busy ? 'Обработка…' : value ? 'Готово — заменить' : label}
+                                </div>
+                              </label>
+                            ))}
+                          </div>
+
                           {checkError && (
                             <div style={{ margin: '0 12px 8px', background: 'rgba(239,68,68,0.1)', border: '0.5px solid rgba(239,68,68,0.2)', borderRadius: 10, padding: '8px 12px', fontSize: 11, color: '#f87171' }}>{checkError}</div>
                           )}
                           <button
-                            style={s.btnGrad(wordCount >= 10 && !checking ? PURPLE : 'rgba(255,255,255,0.1)', wordCount >= 10 && !checking ? 1 : 0.5)}
+                            style={s.btnGrad(
+                              wordCount >= 10 && saveScreenshot && commentScreenshot && !checking && !uploadingSave && !uploadingComment ? PURPLE : 'rgba(255,255,255,0.1)',
+                              wordCount >= 10 && saveScreenshot && commentScreenshot && !checking && !uploadingSave && !uploadingComment ? 1 : 0.5,
+                            )}
                             onClick={completeTask}
                           >
                             {checking ? 'ИИ проверяет...' : `Отправить на проверку — получить ${currentTask.reward} ₢`}
