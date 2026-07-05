@@ -9,6 +9,7 @@ import { fileToJpegBase64 } from './lib/image'
 const PURPLE = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%)'
 const BLUE = 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)'
 const GREEN = 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+const AMBER = 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)'
 
 const getLevel = (tasks: number) => {
   if (tasks >= 51) return { name: 'Про', color: '#f59e0b', next: null }
@@ -19,6 +20,38 @@ const getLevel = (tasks: number) => {
 
 const REQUIRED_SECONDS = 60
 const PACKAGES = [{ s: 10, c: 50 }, { s: 25, c: 100 }, { s: 60, c: 200 }, { s: 200, c: 500 }]
+
+type IconProps = { color: string }
+
+const TasksIcon = ({ color }: IconProps) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 11l3 3L22 4" />
+    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+  </svg>
+)
+
+const IdeasIcon = ({ color }: IconProps) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 18h6" />
+    <path d="M10 22h4" />
+    <path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z" />
+  </svg>
+)
+
+const BoostIcon = ({ color }: IconProps) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="2" width="20" height="20" rx="5" />
+    <circle cx="12" cy="12" r="4" />
+    <circle cx="17.5" cy="6.5" r="0.6" fill={color} stroke="none" />
+  </svg>
+)
+
+const ProfileIcon = ({ color }: IconProps) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 21v-1a7 7 0 0 1 7-7h2a7 7 0 0 1 7 7v1" />
+  </svg>
+)
 
 type AuthStatus = 'loading' | 'needsInstagram' | 'ready'
 
@@ -367,7 +400,7 @@ export default function Home() {
   return (
     <div style={s.page}>
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 72 }}>
-        <div style={{ background: tab === 'boost' ? BLUE : tab === 'stats' ? GREEN : PURPLE, padding: '14px 14px 12px' }}>
+        <div style={{ background: tab === 'boost' ? BLUE : tab === 'stats' ? GREEN : tab === 'ideas' ? AMBER : PURPLE, padding: '14px 14px 12px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>Баланс</div>
@@ -699,17 +732,35 @@ export default function Home() {
       </div>
 
       <div style={s.navBar}>
-        {[
-          { id: "tasks", icon: "ti-list-check", label: "Задания" },
-          { id: "ideas", icon: "ti-bulb", label: "Идеи" },
-          { id: "boost", icon: "ti-brand-instagram", label: "Мой Reels" },
-          { id: "stats", icon: "ti-user-circle", label: "Профиль" },
-        ].map(item => (
-          <button key={item.id} onClick={() => setTab(item.id)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, background: 'transparent', border: 'none', cursor: 'pointer', color: tab === item.id ? '#a855f7' : 'rgba(255,255,255,0.35)', fontSize: 10, fontWeight: 500 }}>
-            <i className={`ti ${item.icon}`} style={{ fontSize: 20 }} aria-hidden="true"></i>
-            {item.label}
-          </button>
-        ))}
+        {([
+          { id: 'tasks', label: 'Задания', color: '#a855f7', Icon: TasksIcon },
+          { id: 'ideas', label: 'Идеи', color: '#f59e0b', Icon: IdeasIcon },
+          { id: 'boost', label: 'Мой Reels', color: '#0ea5e9', Icon: BoostIcon },
+          { id: 'stats', label: 'Профиль', color: '#10b981', Icon: ProfileIcon },
+        ] as const).map(item => {
+          const active = tab === item.id
+          const color = active ? item.color : 'rgba(255,255,255,0.35)'
+          return (
+            <button
+              key={item.id}
+              onClick={() => setTab(item.id)}
+              style={{
+                flex: 1, position: 'relative', display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', gap: 4,
+                background: 'transparent', border: 'none', cursor: 'pointer',
+              }}
+            >
+              <item.Icon color={color} />
+              <span style={{ fontSize: 10, fontWeight: 500, color }}>{item.label}</span>
+              {active && (
+                <span style={{
+                  position: 'absolute', bottom: 0, width: 16, height: 3, borderRadius: 2,
+                  background: item.color,
+                }} />
+              )}
+            </button>
+          )
+        })}
       </div>
     </div>
   )
