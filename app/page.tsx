@@ -1,34 +1,9 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
-
-const STARTER_TASKS = [
-  { id: 1, url: 'https://www.instagram.com/reel/DYFKNNgsAkD/' },
-  { id: 2, url: 'https://www.instagram.com/reel/DaWqnWJK_YM/' },
-  { id: 3, url: 'https://www.instagram.com/reel/DaVAMYXypaS/' },
-  { id: 4, url: 'https://www.instagram.com/reel/DaXAzsttegn/' },
-  { id: 5, url: 'https://www.instagram.com/reel/DaV267fOz_r/' },
-  { id: 6, url: 'https://www.instagram.com/reel/DZc4LwRClgl/' },
-  { id: 7, url: 'https://www.instagram.com/reel/DXEpXXFDWG5/' },
-  { id: 8, url: 'https://www.instagram.com/reel/DaVr17juRHm/' },
-  { id: 9, url: 'https://www.instagram.com/reel/CxIRerGs0W1/' },
-  { id: 10, url: 'https://www.instagram.com/reel/DYpGlZWMXK1/' },
-]
-
-interface Boost { url: string; slots: number; filled: number; date: string }
-interface UserData {
-  igUsername: string
-  balance: number
-  completedTasks: number
-  earnedTotal: number
-  spentTotal: number
-  referralCode: string
-  referrals: number
-  streak: number
-  lastTaskDate: string
-  boosts: Boost[]
-  completedTaskIds: number[]
-  lastComments: string[]
-}
+import { useState, useEffect, useRef, useCallback } from 'react'
+import {
+  login, getProfile, getNextTask, completeTaskApi, createCampaignApi, getMyCampaigns,
+  tokenStorage, apiErrorMessage, Profile, NextTask, CampaignDto,
+} from './lib/api'
 
 const PURPLE = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%)'
 const BLUE = 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)'
@@ -42,19 +17,29 @@ const getLevel = (tasks: number) => {
 }
 
 const REQUIRED_SECONDS = 60
+const PACKAGES = [{ s: 10, c: 50 }, { s: 25, c: 100 }, { s: 60, c: 200 }, { s: 200, c: 500 }]
+
+type AuthStatus = 'loading' | 'needsInstagram' | 'ready'
 
 export default function Home() {
-  const [user, setUser] = useState<UserData | null>(null)
+  const [authStatus, setAuthStatus] = useState<AuthStatus>('loading')
+  const [profile, setProfile] = useState<Profile | null>(null)
+
   const [tab, setTab] = useState('tasks')
   const [wordCount, setWordCount] = useState(0)
   const [comment, setComment] = useState('')
   const [reelsUrl, setReelsUrl] = useState('')
   const [slots, setSlots] = useState(10)
   const [igInput, setIgInput] = useState('')
+  const [igChecking, setIgChecking] = useState(false)
+  const [igError, setIgError] = useState('')
   const [taskDone, setTaskDone] = useState(false)
+  const [lastEarned, setLastEarned] = useState(0)
   const [copied, setCopied] = useState(false)
   const [streakBonus, setStreakBonus] = useState(false)
-  const [currentTask, setCurrentTask] = useState(STARTER_TASKS[0])
+
+  const [currentTask, setCurrentTask] = useState<NextTask | null>(null)
+  const [taskLoading, setTaskLoading] = useState(true)
   const [reelsOpened, setReelsOpened] = useState(false)
   const [timer, setTimer] = useState(0)
   const [timerActive, setTimerActive] = useState(false)
@@ -62,17 +47,103 @@ export default function Home() {
   const [saveScreenshot, setSaveScreenshot] = useState<string>('')
   const [commentScreenshot, setCommentScreenshot] = useState<string>('')
   const [checkError, setCheckError] = useState('')
+
+  const [campaigns, setCampaigns] = useState<CampaignDto[]>([])
+  const [boostError, setBoostError] = useState('')
+
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
+  // --- Авторизация ------------------------------------------------------
   useEffect(() => {
-    const saved = localStorage.getItem('reels_boost_user')
-    if (saved) {
-      const u = JSON.parse(saved)
-      setUser(u)
-      const next = STARTER_TASKS.find(t => !(u.completedTaskIds || []).includes(t.id))
-      if (next) setCurrentTask(next)
+    let cancelled = false
+
+    async function bootstrap() {
+      setAuthStatus('loading')
+
+      if (tokenStorage.get()) {
+        try {
+          const p = await getProfile()
+          if (!cancelled) { setProfile(p); setAuthStatus('ready') }
+          return
+        } catch {
+          tokenStorage.clear()
+        }
+      }
+
+      // Токена нет (или он истёк) — пробуем "тихий" логин: если пользователь
+      // с этим Telegram ID уже существует, бэкенд вернёт токен без повторного
+      // запроса Instagram username.
+      try {
+        const res = await login()
+        if (cancelled) return
+        if (res.token) {
+          tokenStorage.set(res.token)
+          const p = await getProfile()
+          setProfile(p)
+          setAuthStatus('ready')
+        } else if (res.igError) {
+          setIgError(res.igError)
+          setAuthStatus('needsInstagram')
+        } else {
+          setAuthStatus('needsInstagram')
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setIgError(apiErrorMessage(err, 'Не удалось подключиться к серверу'))
+          setAuthStatus('needsInstagram')
+        }
+      }
+    }
+
+    bootstrap()
+    return () => { cancelled = true }
+  }, [])
+
+  const register = async () => {
+    if (!igInput) return
+    setIgChecking(true)
+    setIgError('')
+    try {
+      const res = await login(igInput)
+      if (res.token) {
+        tokenStorage.set(res.token)
+        const p = await getProfile()
+        setProfile(p)
+        setAuthStatus('ready')
+      } else if (res.igError) {
+        setIgError(res.igError)
+      } else {
+        setIgError('Не удалось завершить регистрацию, попробуй ещё раз')
+      }
+    } catch (err) {
+      setIgError(apiErrorMessage(err, 'Ошибка сети — попробуй ещё раз'))
+    } finally {
+      setIgChecking(false)
+    }
+  }
+
+  // --- Задания ------------------------------------------------------
+  const loadNextTask = useCallback(async () => {
+    setTaskLoading(true)
+    try {
+      const t = await getNextTask()
+      setCurrentTask(t)
+    } catch {
+      setCurrentTask(null)
+    } finally {
+      setTaskLoading(false)
     }
   }, [])
+
+  useEffect(() => {
+    if (authStatus === 'ready') loadNextTask()
+  }, [authStatus, loadNextTask])
+
+  useEffect(() => {
+    if (authStatus === 'ready' && tab === 'boost') {
+      getMyCampaigns().then(setCampaigns).catch(() => {})
+    }
+  }, [authStatus, tab])
 
   useEffect(() => {
     if (timerActive && timer < REQUIRED_SECONDS) {
@@ -83,38 +154,13 @@ export default function Home() {
     return () => { if (timerRef.current) clearTimeout(timerRef.current) }
   }, [timerActive, timer])
 
-  const generateCode = (ig: string) =>
-    ig.replace('@', '').toUpperCase().slice(0, 6) + Math.random().toString(36).slice(2, 4).toUpperCase()
-
-  const saveUser = (data: UserData) => {
-    setUser(data)
-    localStorage.setItem('reels_boost_user', JSON.stringify(data))
-  }
-
-  const [igChecking, setIgChecking] = useState(false)
-  const [igError, setIgError] = useState('')
-
-  const register = () => {
-    if (!igInput) return
-    setIgChecking(true)
-    setIgError('')
-
-    // Instagram check temporarily disabled
-    setIgChecking(false)
-    saveUser({
-      igUsername: igInput, balance: 10, completedTasks: 0,
-      earnedTotal: 0, spentTotal: 0, referralCode: generateCode(igInput),
-      referrals: 0, streak: 0, lastTaskDate: '', boosts: [],
-      completedTaskIds: [], lastComments: [],
-    })
-  }
-
   const openReels = () => {
+    if (!currentTask) return
     const tg = (window as any).Telegram?.WebApp
     if (tg) {
-      tg.openLink(currentTask.url)
+      tg.openLink(currentTask.reelsUrl)
     } else {
-      window.open(currentTask.url, '_blank')
+      window.open(currentTask.reelsUrl, '_blank')
     }
     setReelsOpened(true)
     setTimer(0)
@@ -122,41 +168,8 @@ export default function Home() {
     setCheckError('')
   }
 
-  const checkCommentWithAI = async (text: string, prevComments: string[]): Promise<boolean> => {
-    try {
-      const response = await fetch('/api/check-comment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 100,
-          messages: [{
-            role: 'user',
-            content: `Проверь комментарий к Instagram Reels. Ответь только YES или NO.
-
-Правила — комментарий плохой если:
-- Бессмысленный набор слов или просто эмодзи
-- Явный спам или шаблонный текст
-- Очень похож на один из предыдущих комментариев пользователя
-
-Предыдущие комментарии: ${prevComments.slice(-5).join(' | ')}
-
-Новый комментарий: "${text}"
-
-Ответ (YES = хороший, NO = плохой):`
-          }]
-        })
-      })
-      const data = await response.json()
-      const result = data.content?.[0]?.text?.trim() || 'NO'
-      return result.includes('YES')
-    } catch {
-      return true
-    }
-  }
-
   const completeTask = async () => {
-    if (!user || wordCount < 10 || timer < REQUIRED_SECONDS) return
+    if (!profile || !currentTask || wordCount < 10 || timer < REQUIRED_SECONDS) return
     setChecking(true)
     setCheckError('')
 
@@ -166,81 +179,75 @@ export default function Home() {
       return
     }
 
-    const verifyResponse = await fetch('/api/verify-screenshots', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        saveScreenshot,
-        commentScreenshot,
-        commentText: comment
+    try {
+      const verifyResponse = await fetch('/api/verify-screenshots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ saveScreenshot, commentScreenshot, commentText: comment }),
       })
-    })
-    const verifyResult = await verifyResponse.json()
+      const verifyResult = await verifyResponse.json()
 
-    if (!verifyResult.saveValid) {
-      setCheckError('Скриншот сохранения не прошёл проверку. ' + (verifyResult.reason || ''))
+      if (!verifyResult.saveValid) {
+        setCheckError('Скриншот сохранения не прошёл проверку. ' + (verifyResult.reason || ''))
+        setChecking(false)
+        return
+      }
+      if (!verifyResult.commentValid) {
+        setCheckError('Скриншот комментария не прошёл проверку. ' + (verifyResult.reason || ''))
+        setChecking(false)
+        return
+      }
+
+      // Финальное решение и начисление Credits — на бэкенде (повторная ИИ-проверка
+      // комментария + защита от гонки/повторной отправки одного и того же задания).
+      const result = await completeTaskApi(currentTask.id, comment)
+
+      setProfile({
+        ...profile,
+        balance: profile.balance + result.creditsEarned,
+        completedTasks: profile.completedTasks + 1,
+        earnedTotal: profile.earnedTotal + result.creditsEarned,
+        streak: result.streak,
+      })
+      setLastEarned(result.creditsEarned)
+
+      if (result.streakBonusApplied) setStreakBonus(true)
+      setTaskDone(true)
+      setWordCount(0)
+      setComment('')
+      setReelsOpened(false)
+      setTimer(0)
+      setSaveScreenshot('')
+      setCommentScreenshot('')
+      await loadNextTask()
+    } catch (err) {
+      setCheckError(apiErrorMessage(err, 'Не удалось отправить задание на проверку'))
+    } finally {
       setChecking(false)
-      return
     }
-
-    if (!verifyResult.commentValid) {
-      setCheckError('Скриншот комментария не прошёл проверку. ' + (verifyResult.reason || ''))
-      setChecking(false)
-      return
-    }
-
-    const isGood = true
-
-    if (!isGood) {
-      setCheckError('Комментарий не прошёл проверку. Напиши более осмысленный текст.')
-      setChecking(false)
-      return
-    }
-
-    const today = new Date().toDateString()
-    const yesterday = new Date(Date.now() - 86400000).toDateString()
-    const newStreak = user.lastTaskDate === yesterday ? user.streak + 1 : user.lastTaskDate === today ? user.streak : 1
-    const isStreakBonus = newStreak > 0 && newStreak % 7 === 0
-    const bonus = isStreakBonus ? 30 : 0
-    const newCompletedIds = [...(user.completedTaskIds || []), currentTask.id]
-    const nextTask = STARTER_TASKS.find(t => !newCompletedIds.includes(t.id))
-
-    saveUser({
-      ...user,
-      balance: user.balance + 15 + bonus,
-      completedTasks: user.completedTasks + 1,
-      earnedTotal: user.earnedTotal + 15 + bonus,
-      streak: newStreak,
-      lastTaskDate: today,
-      completedTaskIds: newCompletedIds,
-      lastComments: [...(user.lastComments || []).slice(-9), comment],
-    })
-
-    if (isStreakBonus) setStreakBonus(true)
-    setTaskDone(true)
-    setWordCount(0)
-    setComment('')
-    setReelsOpened(false)
-    setTimer(0)
-    setChecking(false)
-    if (nextTask) setCurrentTask(nextTask)
   }
 
-  const PACKAGES = [{s:10,c:50},{s:25,c:100},{s:60,c:200},{s:200,c:500}]
-
-  const launchBoost = () => {
-    if (!user) return
+  // --- Продвижение ------------------------------------------------------
+  const launchBoost = async () => {
+    if (!profile) return
     const cost = PACKAGES.find(p => p.s === slots)?.c || 50
-    if (user.balance < cost || !reelsUrl) return
-    const newBoost: Boost = { url: reelsUrl, slots, filled: 0, date: new Date().toLocaleDateString('ru') }
-    saveUser({ ...user, balance: user.balance - cost, spentTotal: user.spentTotal + cost, boosts: [newBoost, ...user.boosts] })
-    setReelsUrl('')
-    setSlots(10)
+    if (profile.balance < cost || !reelsUrl) return
+    setBoostError('')
+    try {
+      await createCampaignApi(reelsUrl, slots)
+      const [p, myCampaigns] = await Promise.all([getProfile(), getMyCampaigns()])
+      setProfile(p)
+      setCampaigns(myCampaigns)
+      setReelsUrl('')
+      setSlots(10)
+    } catch (err) {
+      setBoostError(apiErrorMessage(err, 'Не удалось запустить продвижение'))
+    }
   }
 
   const copyReferral = () => {
-    if (!user) return
-    navigator.clipboard.writeText(`https://t.me/reelsboost_bot?start=${user.referralCode}`)
+    if (!profile) return
+    navigator.clipboard.writeText(`https://t.me/instagram_community_bot?start=${profile.referralCode}`)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -257,31 +264,41 @@ export default function Home() {
     navBar: { background: '#1a1a2e', borderTop: '0.5px solid rgba(255,255,255,0.08)', display: 'flex', position: 'fixed' as const, bottom: 0, left: 0, right: 0, height: 60 },
   }
 
-  if (!user) return (
+  if (authStatus === 'loading') return (
+    <div style={{ ...s.page, justifyContent: 'center', alignItems: 'center' }}>
+      <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>Загрузка…</div>
+    </div>
+  )
+
+  if (authStatus === 'needsInstagram' || !profile) return (
     <div style={{ ...s.page, justifyContent: 'center' }}>
-      
-        <img src="/banner.jpg" style={{ width: '100%', display: 'block', borderRadius: '0 0 16px 16px' }} alt="Reels Boost" />
+      <img src="/banner.jpg" style={{ width: '100%', display: 'block', borderRadius: '0 0 16px 16px' }} alt="Reels Boost" />
       <div style={{ padding: '20px 16px', flex: 1 }}>
         <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>Твой Instagram</div>
         <input style={{ ...s.input, marginBottom: 8 }} placeholder="@username" value={igInput} onChange={e => setIgInput(e.target.value)} />
         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 20 }}>Открытый аккаунт, старше 30 дней, от 100 подписчиков</div>
+        {igError && (
+          <div style={{ background: 'rgba(239,68,68,0.1)', border: '0.5px solid rgba(239,68,68,0.2)', borderRadius: 10, padding: '8px 12px', fontSize: 11, color: '#f87171', marginBottom: 16 }}>{igError}</div>
+        )}
         <div style={{ background: 'rgba(99,102,241,0.15)', borderRadius: 14, padding: 14, marginBottom: 24, border: '0.5px solid rgba(99,102,241,0.25)' }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: '#a5b4fc', marginBottom: 8 }}>Как это работает</div>
           {['Выполняй задания — зарабатывай Credits', 'Трать Credits на продвижение Reels', 'Получай живую активность от реальных людей'].map((t, i) => (
             <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
-              <div style={{ ...s.stepDot, width: 16, height: 16, fontSize: 8 }}>{i+1}</div>
+              <div style={{ ...s.stepDot, width: 16, height: 16, fontSize: 8 }}>{i + 1}</div>
               <div style={{ fontSize: 11, color: 'rgba(165,180,252,0.8)' }}>{t}</div>
             </div>
           ))}
         </div>
-        <button style={s.btnGrad(PURPLE, igInput ? 1 : 0.4)} onClick={register}>Начать</button>
+        <button style={s.btnGrad(PURPLE, igInput && !igChecking ? 1 : 0.4)} onClick={register}>
+          {igChecking ? 'Проверяем…' : 'Начать'}
+        </button>
       </div>
     </div>
   )
 
-  const level = getLevel(user.completedTasks)
-  const progressToNext = level.next ? Math.round((user.completedTasks / level.next) * 100) : 100
-  const allTasksDone = (user.completedTaskIds || []).length >= STARTER_TASKS.length
+  const level = getLevel(profile.completedTasks)
+  const progressToNext = level.next ? Math.round((profile.completedTasks / level.next) * 100) : 100
+  const noTasksAvailable = !taskLoading && !currentTask
 
   return (
     <div style={s.page}>
@@ -290,17 +307,17 @@ export default function Home() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>Баланс</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{user.balance} <span style={{ fontSize: 14, opacity: 0.7 }}>₢</span></div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{profile.balance} <span style={{ fontSize: 14, opacity: 0.7 }}>₢</span></div>
             </div>
             <div style={{ textAlign: 'right' }}>
               <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 20, padding: '3px 10px', fontSize: 10, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{level.name}</div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 110 }}>{user.igUsername}</div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 110 }}>{profile.igUsername}</div>
             </div>
           </div>
           {level.next && (
             <div style={{ marginTop: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'rgba(255,255,255,0.5)', marginBottom: 4 }}>
-                <span>{user.completedTasks} заданий</span>
+                <span>{profile.completedTasks} заданий</span>
                 <span>до {level.next} — следующий уровень</span>
               </div>
               <div style={{ height: 4, background: 'rgba(255,255,255,0.2)', borderRadius: 4 }}>
@@ -308,11 +325,11 @@ export default function Home() {
               </div>
             </div>
           )}
-          {user.streak > 0 && (
+          {profile.streak > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, background: 'rgba(255,255,255,0.15)', borderRadius: 10, padding: '5px 10px', width: 'fit-content' }}>
               <span style={{ fontSize: 14 }}>🔥</span>
-              <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>{user.streak} дней подряд</span>
-              {user.streak % 7 !== 0 && <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)' }}>до бонуса: {7 - (user.streak % 7)} дн.</span>}
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>{profile.streak} дней подряд</span>
+              {profile.streak % 7 !== 0 && <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)' }}>до бонуса: {7 - (profile.streak % 7)} дн.</span>}
             </div>
           )}
         </div>
@@ -330,29 +347,33 @@ export default function Home() {
             {taskDone && !streakBonus && (
               <div style={{ ...s.card, background: 'rgba(74,222,128,0.1)', border: '0.5px solid rgba(74,222,128,0.2)', textAlign: 'center', padding: 20 }}>
                 <div style={{ fontSize: 28, marginBottom: 6 }}>🎉</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#4ade80', marginBottom: 4 }}>+15 ₢ начислено!</div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>Стрик: {user.streak} дней 🔥</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#4ade80', marginBottom: 4 }}>+{lastEarned} ₢ начислено!</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>Стрик: {profile.streak} дней 🔥</div>
                 <button style={s.btnGrad(PURPLE)} onClick={() => setTaskDone(false)}>Следующее задание</button>
               </div>
             )}
             {!taskDone && !streakBonus && (
-              allTasksDone ? (
+              taskLoading ? (
+                <div style={{ ...s.card, textAlign: 'center', padding: 30 }}>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>Ищем задание…</div>
+                </div>
+              ) : noTasksAvailable ? (
                 <div style={{ ...s.card, textAlign: 'center', padding: 30 }}>
                   <div style={{ fontSize: 32, marginBottom: 8 }}>🎉</div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Все задания выполнены!</div>
                   <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>Новые появятся скоро. Запусти свой Reels!</div>
                   <button style={s.btnGrad(BLUE)} onClick={() => setTab('boost')}>Продвинуть мой Reels</button>
                 </div>
-              ) : (
+              ) : currentTask && (
                 <>
                   <div style={s.card}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                      <div style={{ fontSize: 22, fontWeight: 800, color: '#4ade80' }}>+15 ₢</div>
-                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>задание {(user.completedTaskIds||[]).length + 1} из {STARTER_TASKS.length}</div>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: '#4ade80' }}>+{currentTask.reward} ₢</div>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>выполнено заданий: {profile.completedTasks}</div>
                     </div>
                     {['Открой Reels по ссылке', 'Досмотри до конца 3 раза', 'Лайк, сохранение, сторис, отправь другу', 'Оставь комментарий в Instagram'].map((step, i) => (
                       <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'flex-start' }}>
-                        <div style={s.stepDot}>{i+1}</div>
+                        <div style={s.stepDot}>{i + 1}</div>
                         <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', paddingTop: 2 }}>{step}</div>
                       </div>
                     ))}
@@ -392,7 +413,7 @@ export default function Home() {
                             style={s.btnGrad(wordCount >= 10 && !checking ? PURPLE : 'rgba(255,255,255,0.1)', wordCount >= 10 && !checking ? 1 : 0.5)}
                             onClick={completeTask}
                           >
-                            {checking ? 'ИИ проверяет...' : 'Отправить на проверку — получить 15 ₢'}
+                            {checking ? 'ИИ проверяет...' : `Отправить на проверку — получить ${currentTask.reward} ₢`}
                           </button>
                         </>
                       )}
@@ -430,25 +451,30 @@ export default function Home() {
             </div>
             <div style={{ ...s.card, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Спишется</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#a855f7' }}>{[{s:10,c:50},{s:25,c:100},{s:60,c:200},{s:200,c:500}].find(p=>p.s===slots)?.c || 50} ₢</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#a855f7' }}>{PACKAGES.find(p => p.s === slots)?.c || 50} ₢</div>
             </div>
-            {user.balance < slots * 15 && (
+            {boostError && (
+              <div style={{ ...s.card, background: 'rgba(239,68,68,0.1)', border: '0.5px solid rgba(239,68,68,0.2)', textAlign: 'center' }}>
+                <div style={{ fontSize: 11, color: '#f87171' }}>{boostError}</div>
+              </div>
+            )}
+            {profile.balance < slots * 15 && !boostError && (
               <div style={{ ...s.card, background: 'rgba(239,68,68,0.1)', border: '0.5px solid rgba(239,68,68,0.2)', textAlign: 'center' }}>
                 <div style={{ fontSize: 11, color: '#f87171' }}>Недостаточно Credits — выполни задания</div>
               </div>
             )}
-            <button style={s.btnGrad(BLUE, user.balance >= slots * 15 && reelsUrl ? 1 : 0.35)} onClick={launchBoost}>Запустить продвижение</button>
-            {user.boosts.length > 0 && (
+            <button style={s.btnGrad(BLUE, profile.balance >= slots * 15 && reelsUrl ? 1 : 0.35)} onClick={launchBoost}>Запустить продвижение</button>
+            {campaigns.length > 0 && (
               <div style={s.card}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10 }}>История продвижений</div>
-                {user.boosts.map((b, i) => (
-                  <div key={i} style={{ padding: '10px 0', borderBottom: i < user.boosts.length - 1 ? '0.5px solid rgba(255,255,255,0.06)' : 'none' }}>
-                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 3 }}>{b.date}</div>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.url}</div>
+                {campaigns.map((c) => (
+                  <div key={c.id} style={{ padding: '10px 0', borderBottom: '0.5px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 3 }}>{new Date(c.createdAt).toLocaleDateString('ru')}</div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.reelsUrl}</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>Участников: {b.filled} / {b.slots}</div>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>Участников: {c.filledSlots} / {c.totalSlots}</div>
                       <div style={{ height: 4, width: 80, background: 'rgba(255,255,255,0.1)', borderRadius: 4 }}>
-                        <div style={{ height: '100%', width: `${Math.round((b.filled/b.slots)*100)}%`, background: BLUE, borderRadius: 4 }}></div>
+                        <div style={{ height: '100%', width: `${Math.round((c.filledSlots / c.totalSlots) * 100)}%`, background: BLUE, borderRadius: 4 }}></div>
                       </div>
                     </div>
                   </div>
@@ -464,11 +490,11 @@ export default function Home() {
               <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10 }}>Мой прогресс</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 {[
-                  { label: 'Заданий', value: user.completedTasks, color: '#fff' },
-                  { label: 'Заработано', value: `${user.earnedTotal} ₢`, color: '#4ade80' },
-                  { label: 'Потрачено', value: `${user.spentTotal} ₢`, color: '#818cf8' },
-                  { label: 'Стрик', value: `${user.streak} дн.`, color: '#f59e0b' },
-                  { label: 'Приглашено', value: user.referrals, color: '#c084fc' },
+                  { label: 'Заданий', value: profile.completedTasks, color: '#fff' },
+                  { label: 'Заработано', value: `${profile.earnedTotal} ₢`, color: '#4ade80' },
+                  { label: 'Потрачено', value: `${profile.spentTotal} ₢`, color: '#818cf8' },
+                  { label: 'Стрик', value: `${profile.streak} дн.`, color: '#f59e0b' },
+                  { label: 'Приглашено', value: profile.referrals, color: '#c084fc' },
                   { label: 'Уровень', value: level.name, color: level.color },
                 ].map((item, i) => (
                   <div key={i} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 10, border: '0.5px solid rgba(255,255,255,0.06)' }}>
@@ -482,7 +508,7 @@ export default function Home() {
               <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 4 }}>Пригласи друга</div>
               <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 10 }}>Ты и друг получите по <span style={{ color: '#4ade80', fontWeight: 600 }}>+20 ₢</span></div>
               <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: 10, padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>t.me/reelsboost_bot?start={user.referralCode}</div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>t.me/instagram_community_bot?start={profile.referralCode}</div>
                 <button onClick={copyReferral} style={{ background: copied ? '#4ade80' : PURPLE, border: 'none', borderRadius: 8, padding: '5px 10px', fontSize: 10, fontWeight: 600, color: '#fff', cursor: 'pointer', marginLeft: 8, flexShrink: 0 }}>
                   {copied ? 'Скопировано' : 'Копировать'}
                 </button>
