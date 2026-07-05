@@ -54,6 +54,15 @@ export default function Home() {
   const [campaigns, setCampaigns] = useState<CampaignDto[]>([])
   const [boostError, setBoostError] = useState('')
 
+  const [ideaNiche, setIdeaNiche] = useState('')
+  const [ideaLoading, setIdeaLoading] = useState(false)
+  const [ideaError, setIdeaError] = useState('')
+  const [ideaResult, setIdeaResult] = useState<{
+    ideas: { hook: string; structure: string; cta: string }[]
+    caption: string
+    hashtags: string[]
+  } | null>(null)
+
   // --- Авторизация ------------------------------------------------------
   useEffect(() => {
     let cancelled = false
@@ -282,6 +291,30 @@ export default function Home() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const generateIdeas = async () => {
+    if (!ideaNiche.trim()) return
+    setIdeaLoading(true)
+    setIdeaError('')
+    setIdeaResult(null)
+    try {
+      const response = await fetch('/api/generate-ideas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ niche: ideaNiche.trim() }),
+      })
+      const data = await response.json()
+      if (!response.ok || data.error) {
+        setIdeaError(data.error || 'Не удалось сгенерировать идеи, попробуй ещё раз')
+        return
+      }
+      setIdeaResult(data)
+    } catch {
+      setIdeaError('Ошибка сети — попробуй ещё раз')
+    } finally {
+      setIdeaLoading(false)
+    }
+  }
+
   const elapsedSeconds = openedAt ? Math.min(REQUIRED_SECONDS, Math.floor((now - openedAt) / 1000)) : 0
   const timerReady = elapsedSeconds >= REQUIRED_SECONDS
   const timerPercent = Math.min(100, Math.round((elapsedSeconds / REQUIRED_SECONDS) * 100))
@@ -495,6 +528,67 @@ export default function Home() {
           </>
         )}
 
+        {tab === 'ideas' && (
+          <>
+            <div style={s.card}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 4 }}>
+                ИИ-генератор идей для Reels
+              </div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 10 }}>
+                Укажи свою нишу или тему — получи 3 концепции ролика, готовую подпись и хэштеги
+              </div>
+              <input
+                style={{ ...s.input, marginBottom: 8 }}
+                placeholder="Например: фитнес для начинающих"
+                value={ideaNiche}
+                onChange={e => setIdeaNiche(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !ideaLoading) generateIdeas() }}
+              />
+              <button
+                style={s.btnGrad(ideaNiche.trim() && !ideaLoading ? PURPLE : 'rgba(255,255,255,0.1)', ideaNiche.trim() && !ideaLoading ? 1 : 0.5)}
+                onClick={generateIdeas}
+              >
+                {ideaLoading ? 'ИИ придумывает...' : 'Сгенерировать идеи'}
+              </button>
+            </div>
+
+            {ideaError && (
+              <div style={{ ...s.card, background: 'rgba(239,68,68,0.1)', border: '0.5px solid rgba(239,68,68,0.2)' }}>
+                <div style={{ fontSize: 11, color: '#f87171' }}>{ideaError}</div>
+              </div>
+            )}
+
+            {ideaResult && (
+              <>
+                {ideaResult.ideas.map((idea, i) => (
+                  <div style={s.card} key={i}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <div style={s.stepDot}>{i + 1}</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>Идея {i + 1}</div>
+                    </div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 2 }}>Хук (первые 2-3 сек)</div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', marginBottom: 8 }}>{idea.hook}</div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 2 }}>Структура</div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', marginBottom: 8 }}>{idea.structure}</div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 2 }}>Призыв к действию</div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)' }}>{idea.cta}</div>
+                  </div>
+                ))}
+
+                <div style={s.card}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 6 }}>Готовая подпись</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', marginBottom: 10, whiteSpace: 'pre-wrap' }}>{ideaResult.caption}</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {ideaResult.hashtags.map((tag, i) => (
+                      <span key={i} style={{ fontSize: 10, color: '#a5b4fc', background: 'rgba(99,102,241,0.15)', borderRadius: 8, padding: '4px 8px' }}>{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </>
+        )}
+
         {tab === 'boost' && (
           <>
             <div style={s.card}>
@@ -607,6 +701,7 @@ export default function Home() {
       <div style={s.navBar}>
         {[
           { id: "tasks", icon: "ti-list-check", label: "Задания" },
+          { id: "ideas", icon: "ti-bulb", label: "Идеи" },
           { id: "boost", icon: "ti-brand-instagram", label: "Мой Reels" },
           { id: "stats", icon: "ti-user-circle", label: "Профиль" },
         ].map(item => (
