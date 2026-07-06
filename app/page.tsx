@@ -701,6 +701,8 @@ export default function Home() {
 
         {tab === 'boost' && (
           <>
+            {(() => { const selectedCost = PACKAGES.find(p => p.s === slots)?.c || 50; return (
+            <>
             <div style={s.card}>
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>Ссылка на Reels</div>
               <input style={s.input} placeholder="https://instagram.com/reel/..." value={reelsUrl} onChange={e => setReelsUrl(e.target.value)} />
@@ -725,19 +727,21 @@ export default function Home() {
             </div>
             <div style={{ ...s.card, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Спишется</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#a855f7' }}>{PACKAGES.find(p => p.s === slots)?.c || 50} ₢</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#a855f7' }}>{selectedCost} ₢</div>
             </div>
             {boostError && (
               <div style={{ ...s.card, background: 'rgba(239,68,68,0.1)', border: '0.5px solid rgba(239,68,68,0.2)', textAlign: 'center' }}>
                 <div style={{ fontSize: 11, color: '#f87171' }}>{boostError}</div>
               </div>
             )}
-            {profile.balance < slots * 15 && !boostError && (
+            {profile.balance < selectedCost && !boostError && (
               <div style={{ ...s.card, background: 'rgba(239,68,68,0.1)', border: '0.5px solid rgba(239,68,68,0.2)', textAlign: 'center' }}>
                 <div style={{ fontSize: 11, color: '#f87171' }}>Недостаточно Credits — выполни задания</div>
               </div>
             )}
-            <button style={s.btnGrad(BLUE, profile.balance >= slots * 15 && reelsUrl ? 1 : 0.35)} onClick={launchBoost}>Запустить продвижение</button>
+            <button style={s.btnGrad(BLUE, profile.balance >= selectedCost && reelsUrl ? 1 : 0.35)} onClick={launchBoost}>Запустить продвижение</button>
+            </>
+            )})()}
             {campaigns.length > 0 && (
               <div style={s.card}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10 }}>История продвижений</div>
