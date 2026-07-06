@@ -20,6 +20,7 @@ client.interceptors.request.use((config) => {
 export interface Profile {
   id: number
   igUsername: string
+  profilePicUrl: string | null
   balance: number
   completedTasks: number
   earnedTotal: number

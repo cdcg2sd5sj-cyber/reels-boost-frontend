@@ -91,6 +91,33 @@ function getInitials(igUsername: string): string {
   return clean.slice(0, 2).toUpperCase() || '??'
 }
 
+/**
+ * Круглая аватарка: фото профиля Instagram (через прокси-роут — у Instagram
+ * hotlink protection, поэтому картинку нельзя грузить напрямую по URL) с
+ * фолбэком на инициалы, если фото нет или прокси не смог его получить.
+ */
+function Avatar({ src, username, size }: { src: string | null; username: string; size: number }) {
+  const [failed, setFailed] = useState(false)
+  const proxiedSrc = src ? `/api/avatar-proxy?url=${encodeURIComponent(src)}` : null
+
+  return (
+    <div style={{ width: size, height: size, borderRadius: '50%', padding: 2, background: IG_GRADIENT, flexShrink: 0 }}>
+      <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#0f0f1a', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+        {proxiedSrc && !failed ? (
+          <img
+            src={proxiedSrc}
+            alt={username}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+            onError={() => setFailed(true)}
+          />
+        ) : (
+          <span style={{ fontSize: size * 0.32, fontWeight: 600, color: '#fff' }}>{getInitials(username)}</span>
+        )}
+      </div>
+    </div>
+  )
+}
+
 type AuthStatus = 'loading' | 'needsInstagram' | 'ready'
 
 export default function Home() {
@@ -279,7 +306,7 @@ export default function Home() {
   }
 
   const completeTask = async () => {
-    if (!profile || !currentTask || wordCount < 10 || elapsedSeconds < REQUIRED_SECONDS) return
+    if (!profile || !currentTask || wordCount < 5 || elapsedSeconds < REQUIRED_SECONDS) return
     setChecking(true)
     setCheckError('')
 
@@ -444,11 +471,7 @@ export default function Home() {
               <div style={{ width: 26, height: 26, borderRadius: 8, background: IG_GRADIENT, flexShrink: 0 }} />
               <span style={{ fontSize: 16, fontWeight: 600, color: '#fff' }}>Reels Boost</span>
             </div>
-            <div style={{ width: 36, height: 36, borderRadius: '50%', padding: 2, background: IG_GRADIENT, flexShrink: 0 }}>
-              <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#0f0f1a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: '#fff' }}>
-                {getInitials(profile.igUsername)}
-              </div>
-            </div>
+            <Avatar src={profile.profilePicUrl} username={profile.igUsername} size={36} />
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -579,7 +602,7 @@ export default function Home() {
                             value={comment}
                             onChange={e => { setComment(e.target.value); setWordCount(e.target.value.trim().split(/\s+/).filter((w: string) => w).length) }}
                           />
-                          <div style={{ fontSize: 10, textAlign: 'right', margin: '0 12px 4px', color: wordCount >= 10 ? '#4ade80' : 'rgba(255,255,255,0.3)' }}>{wordCount} / 10 слов</div>
+                          <div style={{ fontSize: 10, textAlign: 'right', margin: '0 12px 4px', color: wordCount >= 5 ? '#4ade80' : 'rgba(255,255,255,0.3)' }}>{wordCount} / 5 слов</div>
 
                           <div style={{ display: 'flex', gap: 8, margin: '0 12px 8px' }}>
                             {([
@@ -621,8 +644,8 @@ export default function Home() {
                           )}
                           <button
                             style={s.btnGrad(
-                              wordCount >= 10 && saveScreenshot && commentScreenshot && !checking && !uploadingSave && !uploadingComment ? PURPLE : 'rgba(255,255,255,0.1)',
-                              wordCount >= 10 && saveScreenshot && commentScreenshot && !checking && !uploadingSave && !uploadingComment ? 1 : 0.5,
+                              wordCount >= 5 && saveScreenshot && commentScreenshot && !checking && !uploadingSave && !uploadingComment ? PURPLE : 'rgba(255,255,255,0.1)',
+                              wordCount >= 5 && saveScreenshot && commentScreenshot && !checking && !uploadingSave && !uploadingComment ? 1 : 0.5,
                             )}
                             onClick={completeTask}
                           >
@@ -764,6 +787,13 @@ export default function Home() {
 
         {tab === 'stats' && (
           <>
+            <div style={{ ...s.card, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Avatar src={profile.profilePicUrl} username={profile.igUsername} size={56} />
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>@{profile.igUsername}</div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: level.color, marginTop: 2 }}>{level.name}</div>
+              </div>
+            </div>
             <div style={s.card}>
               <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10 }}>Мой прогресс</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
