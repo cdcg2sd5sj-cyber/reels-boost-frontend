@@ -6,7 +6,8 @@ import {
 } from './lib/api'
 import { fileToJpegBase64 } from './lib/image'
 
-const PURPLE = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%)'
+const IG_GRADIENT = 'linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #FCAF45 100%)'
+const PURPLE = IG_GRADIENT
 const BLUE = 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)'
 const GREEN = 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
 const AMBER = 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)'
@@ -52,6 +53,43 @@ const ProfileIcon = ({ color }: IconProps) => (
     <path d="M4 21v-1a7 7 0 0 1 7-7h2a7 7 0 0 1 7 7v1" />
   </svg>
 )
+
+const HeartIcon = ({ color }: IconProps) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M19.5 12.572 12 20l-7.5-7.428A5 5 0 1 1 12 6.006a5 5 0 1 1 7.5 6.566z" />
+  </svg>
+)
+
+const CommentIcon = ({ color }: IconProps) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+  </svg>
+)
+
+const ShareIcon = ({ color }: IconProps) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="22" y1="2" x2="11" y2="13" />
+    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+  </svg>
+)
+
+const BookmarkIcon = ({ color }: IconProps) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+  </svg>
+)
+
+const PlayIcon = ({ color }: IconProps) => (
+  <svg width="30" height="30" viewBox="0 0 24 24" fill={color} stroke="none">
+    <path d="M8 5v14l11-7z" />
+  </svg>
+)
+
+/** Инициалы для аватара-заглушки (в духе Instagram — кольцо-градиент + инициалы) */
+function getInitials(igUsername: string): string {
+  const clean = igUsername.replace(/[^a-zA-Zа-яА-Я0-9]/g, '')
+  return clean.slice(0, 2).toUpperCase() || '??'
+}
 
 type AuthStatus = 'loading' | 'needsInstagram' | 'ready'
 
@@ -400,36 +438,48 @@ export default function Home() {
   return (
     <div style={s.page}>
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 72 }}>
-        <div style={{ background: tab === 'boost' ? BLUE : tab === 'stats' ? GREEN : tab === 'ideas' ? AMBER : PURPLE, padding: '14px 14px 12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>Баланс</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{profile.balance} <span style={{ fontSize: 14, opacity: 0.7 }}>₢</span></div>
+        <div style={{ padding: '14px 14px 10px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 26, height: 26, borderRadius: 8, background: IG_GRADIENT, flexShrink: 0 }} />
+              <span style={{ fontSize: 16, fontWeight: 600, color: '#fff' }}>Reels Boost</span>
             </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 20, padding: '3px 10px', fontSize: 10, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{level.name}</div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 110 }}>{profile.igUsername}</div>
+            <div style={{ width: 36, height: 36, borderRadius: '50%', padding: 2, background: IG_GRADIENT, flexShrink: 0 }}>
+              <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#0f0f1a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: '#fff' }}>
+                {getInitials(profile.igUsername)}
+              </div>
             </div>
           </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ background: IG_GRADIENT, borderRadius: 20, padding: '6px 14px', fontSize: 13, fontWeight: 600, color: '#fff' }}>
+              {profile.balance} ₢
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 20, padding: '6px 12px', fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>
+              {level.name}
+            </div>
+            {profile.streak > 0 && (
+              <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 20, padding: '6px 12px', fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>
+                🔥 {profile.streak} дн.
+              </div>
+            )}
+          </div>
+
           {level.next && (
             <div style={{ marginTop: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'rgba(255,255,255,0.5)', marginBottom: 4 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>
                 <span>{profile.completedTasks} заданий</span>
                 <span>до {level.next} — следующий уровень</span>
               </div>
-              <div style={{ height: 4, background: 'rgba(255,255,255,0.2)', borderRadius: 4 }}>
-                <div style={{ height: '100%', width: `${progressToNext}%`, background: '#fff', borderRadius: 4 }}></div>
+              <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 4 }}>
+                <div style={{ height: '100%', width: `${progressToNext}%`, background: IG_GRADIENT, borderRadius: 4 }}></div>
               </div>
             </div>
           )}
-          {profile.streak > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, background: 'rgba(255,255,255,0.15)', borderRadius: 10, padding: '5px 10px', width: 'fit-content' }}>
-              <span style={{ fontSize: 14 }}>🔥</span>
-              <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>{profile.streak} дней подряд</span>
-              {profile.streak % 7 !== 0 && <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)' }}>до бонуса: {7 - (profile.streak % 7)} дн.</span>}
-            </div>
-          )}
         </div>
+
+        <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '0 0 4px' }} />
+
 
         {tab === 'tasks' && (
           <>
@@ -463,26 +513,53 @@ export default function Home() {
                 </div>
               ) : currentTask && (
                 <>
-                  <div style={s.card}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                      <div style={{ fontSize: 22, fontWeight: 800, color: '#4ade80' }}>+{currentTask.reward} ₢</div>
-                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>выполнено заданий: {profile.completedTasks}</div>
-                    </div>
-                    {['Открой Reels по ссылке', 'Досмотри до конца 3 раза', 'Лайк, сохранение, сторис, отправь другу', 'Оставь комментарий в Instagram'].map((step, i) => (
-                      <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'flex-start' }}>
-                        <div style={s.stepDot}>{i + 1}</div>
-                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', paddingTop: 2 }}>{step}</div>
+                  <div style={{ ...s.card, padding: 0, overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px' }}>
+                      <div style={{ width: 28, height: 28, borderRadius: '50%', padding: 2, background: IG_GRADIENT, flexShrink: 0 }}>
+                        <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#0f0f1a' }} />
                       </div>
-                    ))}
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>reelsboost_community</span>
+                      <span style={{ marginLeft: 'auto', fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>задание</span>
+                    </div>
+
+                    <div
+                      onClick={openReels}
+                      style={{ height: 160, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                    >
+                      <PlayIcon color="rgba(255,255,255,0.7)" />
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 12px 4px' }}>
+                      <HeartIcon color="#fff" />
+                      <CommentIcon color="#fff" />
+                      <ShareIcon color="#fff" />
+                      <div style={{ marginLeft: 'auto' }}><BookmarkIcon color="#fff" /></div>
+                    </div>
+
+                    <div style={{ padding: '4px 12px 12px' }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#4ade80' }}>+{currentTask.reward} ₢</span>
+                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}> — открой, посмотри, оставь комментарий</span>
+                    </div>
+
+                    <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)', padding: '10px 12px' }}>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 8 }}>выполнено заданий: {profile.completedTasks}</div>
+                      {['Открой Reels по ссылке', 'Досмотри до конца 3 раза', 'Лайк, сохранение, сторис, отправь другу', 'Оставь комментарий в Instagram'].map((step, i) => (
+                        <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'flex-start' }}>
+                          <div style={s.stepDot}>{i + 1}</div>
+                          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', paddingTop: 2 }}>{step}</div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
-                  <button style={s.btnGrad(PURPLE)} onClick={openReels}>
+                  <button style={s.btnGrad(IG_GRADIENT)} onClick={openReels}>
                     {reelsOpened ? 'Открыть Reels снова' : 'Открыть Reels'}
                   </button>
 
                   {reelsOpened && (
                     <>
                       {!timerReady && (
+
                         <div style={{ ...s.card, textAlign: 'center', padding: 16 }}>
                           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>Смотри ролик...</div>
                           <div style={{ fontSize: 28, fontWeight: 800, color: '#fff', marginBottom: 8 }}>{REQUIRED_SECONDS - elapsedSeconds}с</div>
@@ -733,31 +810,25 @@ export default function Home() {
 
       <div style={s.navBar}>
         {([
-          { id: 'tasks', label: 'Задания', color: '#a855f7', Icon: TasksIcon },
-          { id: 'ideas', label: 'Идеи', color: '#f59e0b', Icon: IdeasIcon },
-          { id: 'boost', label: 'Мой Reels', color: '#0ea5e9', Icon: BoostIcon },
-          { id: 'stats', label: 'Профиль', color: '#10b981', Icon: ProfileIcon },
+          { id: 'tasks', label: 'Задания', Icon: TasksIcon },
+          { id: 'ideas', label: 'Идеи', Icon: IdeasIcon },
+          { id: 'boost', label: 'Мой Reels', Icon: BoostIcon },
+          { id: 'stats', label: 'Профиль', Icon: ProfileIcon },
         ] as const).map(item => {
           const active = tab === item.id
-          const color = active ? item.color : 'rgba(255,255,255,0.35)'
+          const color = active ? '#fff' : 'rgba(255,255,255,0.4)'
           return (
             <button
               key={item.id}
               onClick={() => setTab(item.id)}
               style={{
-                flex: 1, position: 'relative', display: 'flex', flexDirection: 'column',
+                flex: 1, display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center', gap: 4,
                 background: 'transparent', border: 'none', cursor: 'pointer',
               }}
             >
               <item.Icon color={color} />
-              <span style={{ fontSize: 10, fontWeight: 500, color }}>{item.label}</span>
-              {active && (
-                <span style={{
-                  position: 'absolute', bottom: 0, width: 16, height: 3, borderRadius: 2,
-                  background: item.color,
-                }} />
-              )}
+              <span style={{ fontSize: 10, fontWeight: active ? 600 : 400, color }}>{item.label}</span>
             </button>
           )
         })}
