@@ -5,12 +5,8 @@ import {
   tokenStorage, apiErrorMessage, Profile, NextTask, CampaignDto,
 } from './lib/api'
 import { fileToJpegBase64 } from './lib/image'
-
-const IG_GRADIENT = 'linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #FCAF45 100%)'
-const PURPLE = IG_GRADIENT
-const BLUE = 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)'
-const GREEN = 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-const AMBER = 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)'
+import { IG_GRADIENT, PURPLE, BLUE } from './lib/theme'
+import RoadmapPage from './components/Roadmap'
 
 const getLevel = (tasks: number) => {
   if (tasks >= 51) return { name: 'Про', color: '#f59e0b', next: null }
@@ -125,6 +121,7 @@ export default function Home() {
   const [profile, setProfile] = useState<Profile | null>(null)
 
   const [tab, setTab] = useState('tasks')
+  const [showRoadmap, setShowRoadmap] = useState(false)
   const [wordCount, setWordCount] = useState(0)
   const [comment, setComment] = useState('')
   const [reelsUrl, setReelsUrl] = useState('')
@@ -462,6 +459,8 @@ export default function Home() {
   const progressToNext = level.next ? Math.round((profile.completedTasks / level.next) * 100) : 100
   const noTasksAvailable = !taskLoading && !currentTask
 
+  if (showRoadmap) return <RoadmapPage onBack={() => setShowRoadmap(false)} />
+
   return (
     <div style={s.page}>
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 72 }}>
@@ -794,6 +793,19 @@ export default function Home() {
                 <div style={{ fontSize: 11, fontWeight: 600, color: level.color, marginTop: 2 }}>{level.name}</div>
               </div>
             </div>
+
+            <div
+              onClick={() => setShowRoadmap(true)}
+              style={{ ...s.card, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
+            >
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: IG_GRADIENT, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🚀</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 2 }}>Будущее проекта</div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>Roadmap и что мы строим дальше</div>
+              </div>
+              <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.3)' }}>›</span>
+            </div>
+
             <div style={s.card}>
               <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10 }}>Мой прогресс</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
