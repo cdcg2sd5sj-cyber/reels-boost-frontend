@@ -82,7 +82,7 @@ function NumberedSection({ n, title, paragraphs }: { n: number; title: string; p
 
 type Article = { emoji: string; title: string; body: React.ReactNode }
 
-type Category = { id: string; emoji: string; title: string; description: string; articles: Article[] }
+type Category = { id: string; emoji: string; title: string; description: string; teaser: string; articles: Article[] }
 
 const CATEGORIES: Category[] = [
   {
@@ -90,6 +90,7 @@ const CATEGORIES: Category[] = [
     emoji: '🧠',
     title: 'Алгоритмы и рост',
     description: 'Разбираемся, как устроен алгоритм Reels и что реально влияет на рост — без домыслов и обещаний вирусности.',
+    teaser: 'Как Instagram выбирает, кому показать Reels',
     articles: [
       {
         emoji: '🧠',
@@ -178,6 +179,7 @@ const CATEGORIES: Category[] = [
     emoji: '✍️',
     title: 'Создание контента',
     description: 'Хуки, сценарии и частые ошибки, которые мешают ролику найти свою аудиторию.',
+    teaser: 'Хуки, удержание и сценарии',
     articles: [
       {
         emoji: '🪝',
@@ -224,6 +226,7 @@ const CATEGORIES: Category[] = [
     emoji: '📊',
     title: 'Аналитика',
     description: 'Как читать метрики Insights и что означают основные термины.',
+    teaser: 'Как читать свою статистику и что важно',
     articles: [
       {
         emoji: '📊',
@@ -271,6 +274,7 @@ const CATEGORIES: Category[] = [
     emoji: '🗓',
     title: 'Стратегия',
     description: 'Планирование публикаций и честный взгляд на монетизацию.',
+    teaser: 'Планирование и честный путь к доходу',
     articles: [
       {
         emoji: '🗓',
@@ -335,6 +339,7 @@ function CategoryCard({ category, onClick }: { category: Category; onClick: () =
       <div style={{ width: 40, height: 40, borderRadius: 12, background: IG_GRADIENT, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{category.emoji}</div>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{category.title}</div>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4, marginBottom: 4 }}>{category.teaser}</div>
         <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>{category.articles.length} {pluralArticles(category.articles.length)}</div>
       </div>
       <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.3)' }}>›</span>
