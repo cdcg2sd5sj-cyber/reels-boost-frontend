@@ -25,6 +25,8 @@ export async function POST(req: NextRequest) {
 
 Текст комментария который должен быть на скриншоте: "${commentText}"
 
+commentValid должен быть false, если комментарий содержит меньше 5 слов или содержит любые эмодзи — даже если скриншот в остальном совпадает.
+
 Ответь ТОЛЬКО в формате JSON:
 {
   "saveValid": true/false,
