@@ -684,18 +684,6 @@ export default function Home() {
             </div>
 
             <div
-              onClick={() => setShowLeaderboard(true)}
-              style={{ ...s.card, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
-            >
-              <div style={{ width: 40, height: 40, borderRadius: 12, background: IG_GRADIENT, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🏆</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 2 }}>Топ авторов</div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>Таблица лидеров по неделе, месяцу и за всё время</div>
-              </div>
-              <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.3)' }}>›</span>
-            </div>
-
-            <div
               onClick={() => setShowTools(true)}
               style={{ ...s.card, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
             >
