@@ -13,6 +13,9 @@ import LeaderboardPage from './components/Leaderboard'
 import AchievementsSection from './components/Achievements'
 import ShareResultsButton from './components/ShareCard'
 import Avatar from './components/Avatar'
+import OnboardingTour from './components/Onboarding'
+
+const ONBOARDING_KEY = 'rb_onboarding_seen_v1'
 
 const getLevel = (tasks: number) => {
   if (tasks >= 51) return { name: 'Про', color: '#f59e0b', next: null }
@@ -94,6 +97,7 @@ export default function Home() {
   const [profile, setProfile] = useState<Profile | null>(null)
 
   const [tab, setTab] = useState('tasks')
+  const [showOnboarding, setShowOnboarding] = useState(false)
   const [showRoadmap, setShowRoadmap] = useState(false)
   const [showTools, setShowTools] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
@@ -182,6 +186,12 @@ export default function Home() {
         const p = await getProfile()
         setProfile(p)
         setAuthStatus('ready')
+        try {
+          if (!localStorage.getItem(ONBOARDING_KEY)) {
+            localStorage.setItem(ONBOARDING_KEY, '1')
+            setShowOnboarding(true)
+          }
+        } catch {}
       } else if (res.igError) {
         setIgError(res.igError)
       } else {
@@ -407,6 +417,7 @@ export default function Home() {
 
   return (
     <div style={s.page}>
+      {showOnboarding && <OnboardingTour onClose={() => setShowOnboarding(false)} />}
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 72 }}>
         <div style={{ padding: '14px 14px 10px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
