@@ -482,10 +482,8 @@ export default function Home() {
                 <>
                   <div style={{ ...s.card, padding: 0, overflow: 'hidden' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px' }}>
-                      <div style={{ width: 28, height: 28, borderRadius: '50%', padding: 2, background: IG_GRADIENT, flexShrink: 0 }}>
-                        <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#0f0f1a' }} />
-                      </div>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>reelsboost_community</span>
+                      <Avatar src={currentTask.author.profilePicUrl} username={currentTask.author.username} size={28} />
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{currentTask.author.username}</span>
                       <span style={{ marginLeft: 'auto', fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>задание</span>
                     </div>
 

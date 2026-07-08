@@ -57,6 +57,7 @@ export interface NextTask {
   reelsUrl: string
   reward: number
   slotsLeft: number
+  author: { username: string; profilePicUrl: string | null }
 }
 
 export interface CampaignDto {
