@@ -17,6 +17,12 @@ client.interceptors.request.use((config) => {
   return config
 })
 
+export interface Achievement {
+  id: number
+  title: string
+  unlocked: boolean
+}
+
 export interface Profile {
   id: number
   igUsername: string
@@ -28,6 +34,22 @@ export interface Profile {
   referralCode: string
   referrals: number
   streak: number
+  achievements?: Achievement[]
+}
+
+export type LeaderboardPeriod = 'week' | 'month' | 'all'
+
+export interface LeaderboardEntry {
+  rank: number
+  username: string
+  profilePicUrl: string | null
+  totalEarned: number
+  completedTasksCount: number
+}
+
+export interface LeaderboardResponse {
+  leaderboard: LeaderboardEntry[]
+  currentUserRank: number | null
 }
 
 export interface NextTask {
@@ -79,6 +101,11 @@ export async function createCampaignApi(reelsUrl: string, totalSlots: number) {
 
 export async function getMyCampaigns(): Promise<CampaignDto[]> {
   const { data } = await client.get('/campaigns/mine')
+  return data
+}
+
+export async function getLeaderboard(period: LeaderboardPeriod): Promise<LeaderboardResponse> {
+  const { data } = await client.get('/leaderboard', { params: { period } })
   return data
 }
 

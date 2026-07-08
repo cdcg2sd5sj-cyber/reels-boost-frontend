@@ -9,6 +9,10 @@ import { IG_GRADIENT, PURPLE, BLUE } from './lib/theme'
 import RoadmapPage from './components/Roadmap'
 import ToolsPage from './components/Tools'
 import KnowledgeTab from './components/Knowledge'
+import LeaderboardPage from './components/Leaderboard'
+import AchievementsSection from './components/Achievements'
+import ShareResultsButton from './components/ShareCard'
+import Avatar from './components/Avatar'
 
 const getLevel = (tasks: number) => {
   if (tasks >= 51) return { name: 'Про', color: '#f59e0b', next: null }
@@ -19,6 +23,7 @@ const getLevel = (tasks: number) => {
 
 const REQUIRED_SECONDS = 60
 const PACKAGES = [{ s: 10, c: 50 }, { s: 25, c: 100 }, { s: 60, c: 200 }, { s: 200, c: 500 }]
+const EMOJI_REGEX = /\p{Extended_Pictographic}/u
 
 type IconProps = { color: string }
 
@@ -82,39 +87,6 @@ const PlayIcon = ({ color }: IconProps) => (
   </svg>
 )
 
-/** Инициалы для аватара-заглушки (в духе Instagram — кольцо-градиент + инициалы) */
-function getInitials(igUsername: string): string {
-  const clean = igUsername.replace(/[^a-zA-Zа-яА-Я0-9]/g, '')
-  return clean.slice(0, 2).toUpperCase() || '??'
-}
-
-/**
- * Круглая аватарка: фото профиля Instagram (через прокси-роут — у Instagram
- * hotlink protection, поэтому картинку нельзя грузить напрямую по URL) с
- * фолбэком на инициалы, если фото нет или прокси не смог его получить.
- */
-function Avatar({ src, username, size }: { src: string | null; username: string; size: number }) {
-  const [failed, setFailed] = useState(false)
-  const proxiedSrc = src ? `/api/avatar-proxy?url=${encodeURIComponent(src)}` : null
-
-  return (
-    <div style={{ width: size, height: size, borderRadius: '50%', padding: 2, background: IG_GRADIENT, flexShrink: 0 }}>
-      <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#0f0f1a', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-        {proxiedSrc && !failed ? (
-          <img
-            src={proxiedSrc}
-            alt={username}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
-            onError={() => setFailed(true)}
-          />
-        ) : (
-          <span style={{ fontSize: size * 0.32, fontWeight: 600, color: '#fff' }}>{getInitials(username)}</span>
-        )}
-      </div>
-    </div>
-  )
-}
-
 type AuthStatus = 'loading' | 'needsInstagram' | 'ready'
 
 export default function Home() {
@@ -124,7 +96,9 @@ export default function Home() {
   const [tab, setTab] = useState('tasks')
   const [showRoadmap, setShowRoadmap] = useState(false)
   const [showTools, setShowTools] = useState(false)
+  const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [wordCount, setWordCount] = useState(0)
+  const [hasEmoji, setHasEmoji] = useState(false)
   const [comment, setComment] = useState('')
   const [reelsUrl, setReelsUrl] = useState('')
   const [slots, setSlots] = useState(10)
@@ -296,7 +270,7 @@ export default function Home() {
   }
 
   const completeTask = async () => {
-    if (!profile || !currentTask || wordCount < 5 || elapsedSeconds < REQUIRED_SECONDS) return
+    if (!profile || !currentTask || wordCount < 5 || hasEmoji || elapsedSeconds < REQUIRED_SECONDS) return
     setChecking(true)
     setCheckError('')
 
@@ -430,6 +404,7 @@ export default function Home() {
 
   if (showRoadmap) return <RoadmapPage onBack={() => setShowRoadmap(false)} />
   if (showTools) return <ToolsPage onBack={() => setShowTools(false)} />
+  if (showLeaderboard) return <LeaderboardPage onBack={() => setShowLeaderboard(false)} profile={profile} />
 
   return (
     <div style={s.page}>
@@ -535,7 +510,7 @@ export default function Home() {
 
                     <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)', padding: '10px 12px' }}>
                       <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 8 }}>выполнено заданий: {profile.completedTasks}</div>
-                      {['Открой Reels по ссылке', 'Досмотри до конца 3 раза', 'Лайк, сохранение, сторис, отправь другу', 'Оставь комментарий в Instagram'].map((step, i) => (
+                      {['Открой Reels по ссылке', 'Досмотри до конца 3 раза', 'Лайк, сохранение, сторис, отправь другу', 'Оставь комментарий под этим видео — минимум 5 слов, без эмодзи'].map((step, i) => (
                         <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'flex-start' }}>
                           <div style={s.stepDot}>{i + 1}</div>
                           <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', paddingTop: 2 }}>{step}</div>
@@ -564,14 +539,17 @@ export default function Home() {
                         <>
                           <div style={{ background: 'rgba(99,102,241,0.12)', borderRadius: 14, margin: '0 12px 8px', padding: 12, border: '0.5px solid rgba(99,102,241,0.25)' }}>
                             <div style={{ fontSize: 11, fontWeight: 600, color: '#a5b4fc', marginBottom: 3 }}>Вставь свой комментарий</div>
-                            <div style={{ fontSize: 10, color: 'rgba(165,180,252,0.7)' }}>Написанный в Instagram — минимум 10 слов. ИИ проверит.</div>
+                            <div style={{ fontSize: 10, color: 'rgba(165,180,252,0.7)' }}>Написанный в Instagram под этим видео — минимум 5 слов, без эмодзи. ИИ проверит.</div>
                           </div>
                           <textarea
                             style={{ ...s.input, margin: '0 12px 4px', width: 'calc(100% - 24px)', height: 80, resize: 'none', padding: 12 }}
                             value={comment}
-                            onChange={e => { setComment(e.target.value); setWordCount(e.target.value.trim().split(/\s+/).filter((w: string) => w).length) }}
+                            onChange={e => { setComment(e.target.value); setWordCount(e.target.value.trim().split(/\s+/).filter((w: string) => w).length); setHasEmoji(EMOJI_REGEX.test(e.target.value)) }}
                           />
-                          <div style={{ fontSize: 10, textAlign: 'right', margin: '0 12px 4px', color: wordCount >= 5 ? '#4ade80' : 'rgba(255,255,255,0.3)' }}>{wordCount} / 5 слов</div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', margin: '0 12px 4px' }}>
+                            <div style={{ fontSize: 10, color: hasEmoji ? '#f87171' : 'rgba(255,255,255,0.3)' }}>{hasEmoji ? 'уберите эмодзи' : ''}</div>
+                            <div style={{ fontSize: 10, color: wordCount >= 5 ? '#4ade80' : 'rgba(255,255,255,0.3)' }}>{wordCount} / 5 слов</div>
+                          </div>
 
                           <div style={{ display: 'flex', gap: 8, margin: '0 12px 8px' }}>
                             {([
@@ -613,8 +591,8 @@ export default function Home() {
                           )}
                           <button
                             style={s.btnGrad(
-                              wordCount >= 5 && saveScreenshot && commentScreenshot && !checking && !uploadingSave && !uploadingComment ? PURPLE : 'rgba(255,255,255,0.1)',
-                              wordCount >= 5 && saveScreenshot && commentScreenshot && !checking && !uploadingSave && !uploadingComment ? 1 : 0.5,
+                              wordCount >= 5 && !hasEmoji && saveScreenshot && commentScreenshot && !checking && !uploadingSave && !uploadingComment ? PURPLE : 'rgba(255,255,255,0.1)',
+                              wordCount >= 5 && !hasEmoji && saveScreenshot && commentScreenshot && !checking && !uploadingSave && !uploadingComment ? 1 : 0.5,
                             )}
                             onClick={completeTask}
                           >
@@ -706,6 +684,18 @@ export default function Home() {
             </div>
 
             <div
+              onClick={() => setShowLeaderboard(true)}
+              style={{ ...s.card, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
+            >
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: IG_GRADIENT, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🏆</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 2 }}>Топ авторов</div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>Таблица лидеров по неделе, месяцу и за всё время</div>
+              </div>
+              <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.3)' }}>›</span>
+            </div>
+
+            <div
               onClick={() => setShowTools(true)}
               style={{ ...s.card, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
             >
@@ -747,6 +737,10 @@ export default function Home() {
                 ))}
               </div>
             </div>
+
+            <AchievementsSection achievements={profile.achievements ?? []} />
+            <ShareResultsButton profile={profile} />
+
             <div style={s.card}>
               <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 4 }}>Пригласи друга</div>
               <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 10 }}>Ты и друг получите по <span style={{ color: '#4ade80', fontWeight: 600 }}>+20 ₢</span></div>
