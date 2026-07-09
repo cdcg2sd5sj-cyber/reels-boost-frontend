@@ -90,8 +90,8 @@ export async function getNextTask(): Promise<NextTask | null> {
   return data
 }
 
-export async function completeTaskApi(campaignId: number, comment: string) {
-  const { data } = await client.post('/tasks/complete', { campaignId, comment })
+export async function completeTaskApi(campaignId: number, comment: string, reelsUrl: string) {
+  const { data } = await client.post('/tasks/complete', { campaignId, comment, reelsUrl })
   return data as { creditsEarned: number; streak: number; streakBonusApplied: boolean }
 }
 

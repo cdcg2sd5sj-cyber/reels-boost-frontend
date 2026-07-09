@@ -104,6 +104,7 @@ export default function Home() {
   const [wordCount, setWordCount] = useState(0)
   const [hasEmoji, setHasEmoji] = useState(false)
   const [comment, setComment] = useState('')
+  const [taskProofLink, setTaskProofLink] = useState('')
   const [reelsUrl, setReelsUrl] = useState('')
   const [slots, setSlots] = useState(10)
   const [igInput, setIgInput] = useState('')
@@ -284,6 +285,12 @@ export default function Home() {
     setChecking(true)
     setCheckError('')
 
+    if (!taskProofLink.trim()) {
+      setCheckError('Вставь ссылку на Reels из Instagram')
+      setChecking(false)
+      return
+    }
+
     if (!saveScreenshot || !commentScreenshot) {
       setCheckError('Загрузи оба скриншота — сохранения и комментария')
       setChecking(false)
@@ -311,7 +318,7 @@ export default function Home() {
 
       // Финальное решение и начисление Credits — на бэкенде (повторная ИИ-проверка
       // комментария + защита от гонки/повторной отправки одного и того же задания).
-      const result = await completeTaskApi(currentTask.id, comment)
+      const result = await completeTaskApi(currentTask.id, comment, taskProofLink)
 
       setProfile({
         ...profile,
@@ -326,6 +333,7 @@ export default function Home() {
       setTaskDone(true)
       setWordCount(0)
       setComment('')
+      setTaskProofLink('')
       setReelsOpened(false)
       setOpenedAt(null)
       setSaveScreenshot('')
@@ -511,14 +519,9 @@ export default function Home() {
                       <div style={{ marginLeft: 'auto' }}><BookmarkIcon color="#fff" /></div>
                     </div>
 
-                    <div style={{ padding: '4px 12px 12px' }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#4ade80' }}>+{currentTask.reward} ₢</span>
-                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}> — открой, посмотри, оставь комментарий</span>
-                    </div>
-
                     <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)', padding: '10px 12px' }}>
                       <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 8 }}>выполнено заданий: {profile.completedTasks}</div>
-                      {['Открой Reels по ссылке', 'Досмотри до конца 3 раза', 'Лайк, сохранение, сторис, отправь другу', 'Оставь комментарий под этим видео — минимум 5 слов, без эмодзи'].map((step, i) => (
+                      {['Открой Reels по ссылке', 'Досмотри до конца 3 раза', 'Лайк, сохранение, сторис, отправь другу', 'Оставь комментарий под этим видео — минимум 5 слов, без эмодзи', 'Скопируй ссылку на этот Reels из самого Instagram (Поделиться → Скопировать ссылку) и вставь её в поле ниже'].map((step, i) => (
                         <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'flex-start' }}>
                           <div style={s.stepDot}>{i + 1}</div>
                           <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', paddingTop: 2 }}>{step}</div>
@@ -557,6 +560,16 @@ export default function Home() {
                           <div style={{ display: 'flex', justifyContent: 'space-between', margin: '0 12px 4px' }}>
                             <div style={{ fontSize: 10, color: hasEmoji ? '#f87171' : 'rgba(255,255,255,0.3)' }}>{hasEmoji ? 'уберите эмодзи' : ''}</div>
                             <div style={{ fontSize: 10, color: wordCount >= 5 ? '#4ade80' : 'rgba(255,255,255,0.3)' }}>{wordCount} / 5 слов</div>
+                          </div>
+
+                          <input
+                            style={{ ...s.input, margin: '8px 12px 4px', width: 'calc(100% - 24px)' }}
+                            placeholder="Вставь ссылку на Reels"
+                            value={taskProofLink}
+                            onChange={e => setTaskProofLink(e.target.value)}
+                          />
+                          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', margin: '0 12px 8px' }}>
+                            Открой Reels в Instagram → Поделиться → Скопировать ссылку → вставь сюда
                           </div>
 
                           <div style={{ display: 'flex', gap: 8, margin: '0 12px 8px' }}>
@@ -599,8 +612,8 @@ export default function Home() {
                           )}
                           <button
                             style={s.btnGrad(
-                              wordCount >= 5 && !hasEmoji && saveScreenshot && commentScreenshot && !checking && !uploadingSave && !uploadingComment ? PURPLE : 'rgba(255,255,255,0.1)',
-                              wordCount >= 5 && !hasEmoji && saveScreenshot && commentScreenshot && !checking && !uploadingSave && !uploadingComment ? 1 : 0.5,
+                              wordCount >= 5 && !hasEmoji && taskProofLink.trim() && saveScreenshot && commentScreenshot && !checking && !uploadingSave && !uploadingComment ? PURPLE : 'rgba(255,255,255,0.1)',
+                              wordCount >= 5 && !hasEmoji && taskProofLink.trim() && saveScreenshot && commentScreenshot && !checking && !uploadingSave && !uploadingComment ? 1 : 0.5,
                             )}
                             onClick={completeTask}
                           >
