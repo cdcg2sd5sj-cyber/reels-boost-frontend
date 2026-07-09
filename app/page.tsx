@@ -14,6 +14,7 @@ import AchievementsSection from './components/Achievements'
 import ShareResultsButton from './components/ShareCard'
 import Avatar from './components/Avatar'
 import OnboardingTour from './components/Onboarding'
+import BoostSuccessModal, { BoostSuccessInfo } from './components/BoostSuccessModal'
 
 const ONBOARDING_KEY = 'rb_onboarding_seen_v1'
 
@@ -25,7 +26,12 @@ const getLevel = (tasks: number) => {
 }
 
 const REQUIRED_SECONDS = 60
-const PACKAGES = [{ s: 10, c: 50 }, { s: 25, c: 100 }, { s: 60, c: 200 }, { s: 200, c: 500 }]
+const BOOST_PACKAGES = [
+  { name: 'Мини', slots: 10, credits: 50, emoji: '🌱' },
+  { name: 'Старт', slots: 25, credits: 100, emoji: '🚀' },
+  { name: 'Буст', slots: 60, credits: 200, emoji: '⚡️' },
+  { name: 'Макс', slots: 200, credits: 500, emoji: '🔥' },
+]
 const EMOJI_REGEX = /\p{Extended_Pictographic}/u
 
 type IconProps = { color: string }
@@ -129,6 +135,7 @@ export default function Home() {
 
   const [campaigns, setCampaigns] = useState<CampaignDto[]>([])
   const [boostError, setBoostError] = useState('')
+  const [boostSuccess, setBoostSuccess] = useState<BoostSuccessInfo | null>(null)
 
   // --- Авторизация ------------------------------------------------------
   useEffect(() => {
@@ -349,7 +356,8 @@ export default function Home() {
   // --- Продвижение ------------------------------------------------------
   const launchBoost = async () => {
     if (!profile) return
-    const cost = PACKAGES.find(p => p.s === slots)?.c || 50
+    const pkg = BOOST_PACKAGES.find(p => p.slots === slots)
+    const cost = pkg?.credits || 50
     if (profile.balance < cost || !reelsUrl) return
     setBoostError('')
     try {
@@ -358,6 +366,7 @@ export default function Home() {
       setProfile(p)
       setCampaigns(myCampaigns)
       setReelsUrl('')
+      setBoostSuccess({ name: pkg?.name || '', emoji: pkg?.emoji || '🚀', slots, cost })
       setSlots(10)
     } catch (err) {
       setBoostError(apiErrorMessage(err, 'Не удалось запустить продвижение'))
@@ -426,6 +435,7 @@ export default function Home() {
   return (
     <div style={s.page}>
       {showOnboarding && <OnboardingTour onClose={() => setShowOnboarding(false)} />}
+      {boostSuccess && <BoostSuccessModal info={boostSuccess} onClose={() => setBoostSuccess(null)} />}
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(72px + env(safe-area-inset-bottom, 8px))' }}>
         <div style={{ padding: '14px 14px 10px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -637,7 +647,7 @@ export default function Home() {
 
         {tab === 'boost' && (
           <>
-            {(() => { const selectedCost = PACKAGES.find(p => p.s === slots)?.c || 50; return (
+            {(() => { const selectedCost = BOOST_PACKAGES.find(p => p.slots === slots)?.credits || 50; return (
             <>
             <div style={s.card}>
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>Ссылка на Reels</div>
@@ -646,12 +656,7 @@ export default function Home() {
             <div style={s.card}>
               <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10 }}>Выбери пакет</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                {[
-                  { name: 'Мини', slots: 10, credits: 50, emoji: '🌱' },
-                  { name: 'Старт', slots: 25, credits: 100, emoji: '🚀' },
-                  { name: 'Буст', slots: 60, credits: 200, emoji: '⚡️' },
-                  { name: 'Макс', slots: 200, credits: 500, emoji: '🔥' },
-                ].map((pkg) => (
+                {BOOST_PACKAGES.map((pkg) => (
                   <div key={pkg.name} onClick={() => setSlots(pkg.slots)} style={{ background: slots === pkg.slots ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.05)', border: slots === pkg.slots ? '0.5px solid rgba(99,102,241,0.6)' : '0.5px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 10, cursor: 'pointer', textAlign: 'center' as const }}>
                     <div style={{ fontSize: 18, marginBottom: 4 }}>{pkg.emoji}</div>
                     <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{pkg.name}</div>
