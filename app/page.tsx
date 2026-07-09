@@ -517,9 +517,32 @@ export default function Home() {
 
                     <div
                       onClick={openReels}
-                      style={{ height: 160, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                      style={{
+                        height: 160,
+                        background: 'radial-gradient(circle at 20% 15%, rgba(131,58,180,0.35) 0%, transparent 55%), radial-gradient(circle at 85% 85%, rgba(253,29,29,0.22) 0%, transparent 55%), linear-gradient(135deg, #1c1c30 0%, #0f0f1a 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                      }}
                     >
-                      <PlayIcon color="rgba(255,255,255,0.7)" />
+                      <div
+                        style={{
+                          width: 56,
+                          height: 56,
+                          borderRadius: '50%',
+                          background: 'rgba(255,255,255,0.14)',
+                          border: '1px solid rgba(255,255,255,0.25)',
+                          boxShadow: '0 4px 18px rgba(0,0,0,0.35), 0 0 24px rgba(131,58,180,0.25)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <div style={{ marginLeft: 3 }}>
+                          <PlayIcon color="rgba(255,255,255,0.9)" />
+                        </div>
+                      </div>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 12px 4px' }}>
