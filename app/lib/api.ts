@@ -65,6 +65,7 @@ export interface CampaignDto {
   reelsUrl: string
   totalSlots: number
   filledSlots: number
+  status: 'ACTIVE' | 'COMPLETED' | 'PAUSED'
   createdAt: string
   _count: { completions: number }
 }

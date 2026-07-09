@@ -404,7 +404,8 @@ export default function Home() {
       <img src="/banner.jpg" style={{ width: '100%', display: 'block', borderRadius: '0 0 16px 16px' }} alt="Reels Boost" />
       <div style={{ padding: '20px 16px', flex: 1 }}>
         <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>Твой Instagram</div>
-        <input style={{ ...s.input, marginBottom: 20 }} placeholder="@username" value={igInput} onChange={e => setIgInput(e.target.value)} />
+        <input style={{ ...s.input, marginBottom: 8 }} placeholder="@username" value={igInput} onChange={e => setIgInput(e.target.value)} />
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 20 }}>Открытый аккаунт, от 10 подписчиков</div>
         {igError && (
           <div style={{ background: 'rgba(239,68,68,0.1)', border: '0.5px solid rgba(239,68,68,0.2)', borderRadius: 10, padding: '8px 12px', fontSize: 11, color: '#f87171', marginBottom: 16 }}>{igError}</div>
         )}
@@ -670,59 +671,104 @@ export default function Home() {
 
         {tab === 'boost' && (
           <>
-            {(() => { const selectedCost = BOOST_PACKAGES.find(p => p.slots === slots)?.credits || 50; return (
-            <>
-            <div style={s.card}>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>Ссылка на Reels</div>
-              <input style={s.input} placeholder="https://instagram.com/reel/..." value={reelsUrl} onChange={e => setReelsUrl(e.target.value)} />
-            </div>
-            <div style={s.card}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10 }}>Выбери пакет</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                {BOOST_PACKAGES.map((pkg) => (
-                  <div key={pkg.name} onClick={() => setSlots(pkg.slots)} style={{ background: slots === pkg.slots ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.05)', border: slots === pkg.slots ? '0.5px solid rgba(99,102,241,0.6)' : '0.5px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 10, cursor: 'pointer', textAlign: 'center' as const }}>
-                    <div style={{ fontSize: 18, marginBottom: 4 }}>{pkg.emoji}</div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{pkg.name}</div>
-                    <div style={{ fontSize: 11, color: '#4ade80', fontWeight: 600 }}>{pkg.credits} ₢</div>
-                    <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{pkg.slots} участников</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div style={{ ...s.card, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Спишется</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#a855f7' }}>{selectedCost} ₢</div>
-            </div>
-            {boostError && (
-              <div style={{ ...s.card, background: 'rgba(239,68,68,0.1)', border: '0.5px solid rgba(239,68,68,0.2)', textAlign: 'center' }}>
-                <div style={{ fontSize: 11, color: '#f87171' }}>{boostError}</div>
-              </div>
-            )}
-            {profile.balance < selectedCost && !boostError && (
-              <div style={{ ...s.card, background: 'rgba(239,68,68,0.1)', border: '0.5px solid rgba(239,68,68,0.2)', textAlign: 'center' }}>
-                <div style={{ fontSize: 11, color: '#f87171' }}>Недостаточно Credits — выполни задания</div>
-              </div>
-            )}
-            <button style={s.btnGrad(BLUE, profile.balance >= selectedCost && reelsUrl ? 1 : 0.35)} onClick={launchBoost}>Запустить продвижение</button>
-            </>
-            )})()}
-            {campaigns.length > 0 && (
-              <div style={s.card}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10 }}>История продвижений</div>
-                {campaigns.map((c) => (
-                  <div key={c.id} style={{ padding: '10px 0', borderBottom: '0.5px solid rgba(255,255,255,0.06)' }}>
-                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 3 }}>{new Date(c.createdAt).toLocaleDateString('ru')}</div>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.reelsUrl}</div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>Участников: {c.filledSlots} / {c.totalSlots}</div>
-                      <div style={{ height: 4, width: 80, background: 'rgba(255,255,255,0.1)', borderRadius: 4 }}>
-                        <div style={{ height: '100%', width: `${Math.round((c.filledSlots / c.totalSlots) * 100)}%`, background: BLUE, borderRadius: 4 }}></div>
+            {(() => {
+              const activeCampaign = campaigns.find(c => c.status === 'ACTIVE')
+              if (activeCampaign) {
+                const percent = Math.min(100, Math.round((activeCampaign.filledSlots / activeCampaign.totalSlots) * 100))
+                return (
+                  <div style={{ ...s.card, padding: 0, overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px' }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>Твоё продвижение</span>
+                      <span style={{ marginLeft: 'auto', fontSize: 10, color: '#4ade80' }}>активно</span>
+                    </div>
+
+                    <div
+                      style={{
+                        height: 160,
+                        background: 'radial-gradient(circle at 20% 15%, rgba(131,58,180,0.35) 0%, transparent 55%), radial-gradient(circle at 85% 85%, rgba(253,29,29,0.22) 0%, transparent 55%), linear-gradient(135deg, #1c1c30 0%, #0f0f1a 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 56,
+                          height: 56,
+                          borderRadius: '50%',
+                          background: 'rgba(255,255,255,0.14)',
+                          border: '1px solid rgba(255,255,255,0.25)',
+                          boxShadow: '0 4px 18px rgba(0,0,0,0.35), 0 0 24px rgba(131,58,180,0.25)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <div style={{ marginLeft: 3 }}>
+                          <PlayIcon color="rgba(255,255,255,0.9)" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ padding: '10px 12px 14px' }}>
+                      <a
+                        href={activeCampaign.reelsUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ display: 'block', fontSize: 11, color: '#a5b4fc', marginBottom: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                      >
+                        {activeCampaign.reelsUrl}
+                      </a>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{activeCampaign.filledSlots} из {activeCampaign.totalSlots} участников</span>
+                        <span style={{ fontSize: 11, color: '#4ade80', fontWeight: 600 }}>{percent}%</span>
+                      </div>
+                      <div style={{ height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 6 }}>
+                        <div style={{ height: '100%', width: `${percent}%`, background: BLUE, borderRadius: 6, transition: 'width 0.4s ease' }}></div>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                )
+              }
+
+              const selectedCost = BOOST_PACKAGES.find(p => p.slots === slots)?.credits || 50
+              return (
+                <>
+                  <div style={s.card}>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>Ссылка на Reels</div>
+                    <input style={s.input} placeholder="https://instagram.com/reel/..." value={reelsUrl} onChange={e => setReelsUrl(e.target.value)} />
+                  </div>
+                  <div style={s.card}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10 }}>Выбери пакет</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                      {BOOST_PACKAGES.map((pkg) => (
+                        <div key={pkg.name} onClick={() => setSlots(pkg.slots)} style={{ background: slots === pkg.slots ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.05)', border: slots === pkg.slots ? '0.5px solid rgba(99,102,241,0.6)' : '0.5px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 10, cursor: 'pointer', textAlign: 'center' as const }}>
+                          <div style={{ fontSize: 18, marginBottom: 4 }}>{pkg.emoji}</div>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{pkg.name}</div>
+                          <div style={{ fontSize: 11, color: '#4ade80', fontWeight: 600 }}>{pkg.credits} ₢</div>
+                          <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{pkg.slots} участников</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ ...s.card, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Спишется</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#a855f7' }}>{selectedCost} ₢</div>
+                  </div>
+                  {boostError && (
+                    <div style={{ ...s.card, background: 'rgba(239,68,68,0.1)', border: '0.5px solid rgba(239,68,68,0.2)', textAlign: 'center' }}>
+                      <div style={{ fontSize: 11, color: '#f87171' }}>{boostError}</div>
+                    </div>
+                  )}
+                  {profile.balance < selectedCost && !boostError && (
+                    <div style={{ ...s.card, background: 'rgba(239,68,68,0.1)', border: '0.5px solid rgba(239,68,68,0.2)', textAlign: 'center' }}>
+                      <div style={{ fontSize: 11, color: '#f87171' }}>Недостаточно Credits — выполни задания</div>
+                    </div>
+                  )}
+                  <button style={s.btnGrad(BLUE, profile.balance >= selectedCost && reelsUrl ? 1 : 0.35)} onClick={launchBoost}>Запустить продвижение</button>
+                </>
+              )
+            })()}
           </>
         )}
 
