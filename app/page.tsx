@@ -519,6 +519,10 @@ export default function Home() {
                       <div style={{ marginLeft: 'auto' }}><BookmarkIcon color="#fff" /></div>
                     </div>
 
+                    <div style={{ padding: '4px 12px 12px' }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#4ade80' }}>За выполненное задание получаешь {currentTask.reward} ₢</span>
+                    </div>
+
                     <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)', padding: '10px 12px' }}>
                       <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 8 }}>выполнено заданий: {profile.completedTasks}</div>
                       {['Открой Reels по ссылке', 'Досмотри до конца 3 раза', 'Лайк, сохранение, сторис, отправь другу', 'Оставь комментарий под этим видео — минимум 5 слов, без эмодзи', 'Скопируй ссылку на этот Reels из самого Instagram (Поделиться → Скопировать ссылку) и вставь её в поле ниже'].map((step, i) => (
