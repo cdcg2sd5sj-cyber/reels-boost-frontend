@@ -103,7 +103,7 @@ export default function Home() {
   const [profile, setProfile] = useState<Profile | null>(null)
 
   const [tab, setTab] = useState('tasks')
-  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [introSeen, setIntroSeen] = useState(() => !!localStorage.getItem(ONBOARDING_KEY))
   const [showRoadmap, setShowRoadmap] = useState(false)
   const [showTools, setShowTools] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
@@ -194,12 +194,6 @@ export default function Home() {
         const p = await getProfile()
         setProfile(p)
         setAuthStatus('ready')
-        try {
-          if (!localStorage.getItem(ONBOARDING_KEY)) {
-            localStorage.setItem(ONBOARDING_KEY, '1')
-            setShowOnboarding(true)
-          }
-        } catch {}
       } else if (res.igError) {
         setIgError(res.igError)
       } else {
@@ -399,6 +393,13 @@ export default function Home() {
     </div>
   )
 
+  if (authStatus === 'needsInstagram' && !introSeen) return (
+    <OnboardingTour onClose={() => {
+      localStorage.setItem(ONBOARDING_KEY, '1')
+      setIntroSeen(true)
+    }} />
+  )
+
   if (authStatus === 'needsInstagram' || !profile) return (
     <div style={{ ...s.page, justifyContent: 'center' }}>
       <img src="/banner.jpg" style={{ width: '100%', display: 'block', borderRadius: '0 0 16px 16px' }} alt="Reels Boost" />
@@ -435,7 +436,6 @@ export default function Home() {
 
   return (
     <div style={s.page}>
-      {showOnboarding && <OnboardingTour onClose={() => setShowOnboarding(false)} />}
       {boostSuccess && <BoostSuccessModal info={boostSuccess} onClose={() => setBoostSuccess(null)} />}
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(72px + env(safe-area-inset-bottom, 8px))' }}>
         <div style={{ padding: '14px 14px 10px' }}>
