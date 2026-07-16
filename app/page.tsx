@@ -103,7 +103,7 @@ export default function Home() {
   const [profile, setProfile] = useState<Profile | null>(null)
 
   const [tab, setTab] = useState('tasks')
-  const [introSeen, setIntroSeen] = useState(() => !!localStorage.getItem(ONBOARDING_KEY))
+  const [introSeen, setIntroSeen] = useState(false)
   const [showRoadmap, setShowRoadmap] = useState(false)
   const [showTools, setShowTools] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
@@ -136,6 +136,10 @@ export default function Home() {
   const [campaigns, setCampaigns] = useState<CampaignDto[]>([])
   const [boostError, setBoostError] = useState('')
   const [boostSuccess, setBoostSuccess] = useState<BoostSuccessInfo | null>(null)
+
+  useEffect(() => {
+    if (localStorage.getItem(ONBOARDING_KEY)) setIntroSeen(true)
+  }, [])
 
   // --- Авторизация ------------------------------------------------------
   useEffect(() => {
