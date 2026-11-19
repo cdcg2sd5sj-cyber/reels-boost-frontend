@@ -4,7 +4,6 @@ import {
   login, getProfile, getNextTask, completeTaskApi, createCampaignApi, getMyCampaigns,
   tokenStorage, apiErrorMessage, Profile, NextTask, CampaignDto,
 } from './lib/api'
-import { fileToJpegBase64 } from './lib/image'
 import { IG_GRADIENT, PURPLE, BLUE } from './lib/theme'
 import RoadmapPage from './components/Roadmap'
 import ToolsPage from './components/Tools'
@@ -25,7 +24,8 @@ const getLevel = (tasks: number) => {
   return { name: 'Новичок', color: '#6b7280', next: 6 }
 }
 
-const REQUIRED_SECONDS = 60
+// Сколько секунд человек должен пробыть в Reels, прежде чем сможет вставить ссылку.
+const REQUIRED_SECONDS = 30
 
 // Шорткод из ссылки вида instagram.com/reel/<code>/ или /p/<code>/
 const getShortcode = (url: string): string | null => {
@@ -61,7 +61,6 @@ const BOOST_PACKAGES = [
   { name: 'Буст', slots: 60, credits: 200, emoji: '⚡️' },
   { name: 'Макс', slots: 200, credits: 500, emoji: '🔥' },
 ]
-const EMOJI_REGEX = /\p{Extended_Pictographic}/u
 
 type IconProps = { color: string }
 
@@ -136,9 +135,6 @@ export default function Home() {
   const [showRoadmap, setShowRoadmap] = useState(false)
   const [showTools, setShowTools] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
-  const [wordCount, setWordCount] = useState(0)
-  const [hasEmoji, setHasEmoji] = useState(false)
-  const [comment, setComment] = useState('')
   const [taskProofLink, setTaskProofLink] = useState('')
   const [reelsUrl, setReelsUrl] = useState('')
   const [slots, setSlots] = useState(10)
@@ -156,10 +152,6 @@ export default function Home() {
   const [openedAt, setOpenedAt] = useState<number | null>(null)
   const [now, setNow] = useState<number>(() => Date.now())
   const [checking, setChecking] = useState(false)
-  const [saveScreenshot, setSaveScreenshot] = useState<string>('')
-  const [commentScreenshot, setCommentScreenshot] = useState<string>('')
-  const [uploadingSave, setUploadingSave] = useState(false)
-  const [uploadingComment, setUploadingComment] = useState(false)
   const [checkError, setCheckError] = useState('')
 
   const [campaigns, setCampaigns] = useState<CampaignDto[]>([])
@@ -314,61 +306,34 @@ export default function Home() {
     setCheckError('')
   }
 
-  const handleScreenshotSelect = async (kind: 'save' | 'comment', file: File | null) => {
-    if (!file) return
-    const setBusy = kind === 'save' ? setUploadingSave : setUploadingComment
-    const setValue = kind === 'save' ? setSaveScreenshot : setCommentScreenshot
-    setBusy(true)
-    setCheckError('')
+  const pasteProofLink = async () => {
     try {
-      const base64 = await fileToJpegBase64(file)
-      setValue(base64)
+      const text = await navigator.clipboard.readText()
+      if (text) setTaskProofLink(text.trim())
     } catch {
-      setCheckError('Не удалось обработать изображение — попробуй другой файл')
-    } finally {
-      setBusy(false)
+      setCheckError('Не получилось вставить автоматически — нажми на поле и вставь ссылку вручную')
     }
   }
 
   const completeTask = async () => {
-    if (!profile || !currentTask || wordCount < 5 || hasEmoji || elapsedSeconds < REQUIRED_SECONDS) return
-    setChecking(true)
+    if (!profile || !currentTask || elapsedSeconds < REQUIRED_SECONDS || checking) return
     setCheckError('')
 
-    if (!taskProofLink.trim()) {
-      setCheckError('Вставь ссылку на Reels из Instagram')
-      setChecking(false)
+    const link = taskProofLink.trim()
+    if (!link) {
+      setCheckError('Вставь ссылку, скопированную в Instagram')
+      return
+    }
+    const linkCode = getShortcode(link)
+    const taskCode = getShortcode(currentTask.reelsUrl)
+    if (!linkCode || (taskCode && linkCode !== taskCode)) {
+      setCheckError('Это ссылка не на тот Reels. В Instagram нажми «Поделиться» → «Копировать ссылку» именно в этом ролике')
       return
     }
 
-    if (!saveScreenshot || !commentScreenshot) {
-      setCheckError('Загрузи оба скриншота — сохранения и комментария')
-      setChecking(false)
-      return
-    }
-
+    setChecking(true)
     try {
-      const verifyResponse = await fetch('/api/verify-screenshots', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ saveScreenshot, commentScreenshot, commentText: comment }),
-      })
-      const verifyResult = await verifyResponse.json()
-
-      if (!verifyResult.saveValid) {
-        setCheckError('Скриншот сохранения не прошёл проверку. ' + (verifyResult.reason || ''))
-        setChecking(false)
-        return
-      }
-      if (!verifyResult.commentValid) {
-        setCheckError('Скриншот комментария не прошёл проверку. ' + (verifyResult.reason || ''))
-        setChecking(false)
-        return
-      }
-
-      // Финальное решение и начисление Credits — на бэкенде (повторная ИИ-проверка
-      // комментария + защита от гонки/повторной отправки одного и того же задания).
-      const result = await completeTaskApi(currentTask.id, comment, taskProofLink)
+      const result = await completeTaskApi(currentTask.id, link)
 
       setProfile({
         ...profile,
@@ -381,13 +346,9 @@ export default function Home() {
 
       if (result.streakBonusApplied) setStreakBonus(true)
       setTaskDone(true)
-      setWordCount(0)
-      setComment('')
       setTaskProofLink('')
       setReelsOpened(false)
       setOpenedAt(null)
-      setSaveScreenshot('')
-      setCommentScreenshot('')
       await loadNextTask()
     } catch (err) {
       setCheckError(apiErrorMessage(err, 'Не удалось отправить задание на проверку'))
@@ -433,7 +394,7 @@ export default function Home() {
     input: { width: '100%', background: 'rgba(255,255,255,0.07)', border: '0.5px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '10px 12px', fontSize: 13, color: '#fff', outline: 'none' },
     btnGrad: (grad: string, opacity = 1) => ({ background: grad, borderRadius: 14, padding: '13px 16px', textAlign: 'center' as const, fontSize: 14, fontWeight: 700, color: '#fff', margin: '8px 12px', cursor: opacity < 1 ? 'default' : 'pointer', border: 'none', width: 'calc(100% - 24px)', opacity, display: 'block' }),
     stepDot: { width: 20, height: 20, borderRadius: '50%', background: PURPLE, color: '#fff', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-    navBar: { background: '#1a1a2e', borderTop: '0.5px solid rgba(255,255,255,0.08)', display: 'flex', position: 'fixed' as const, bottom: 0, left: 0, right: 0, height: 'calc(60px + env(safe-area-inset-bottom, 8px))', paddingBottom: 'env(safe-area-inset-bottom, 8px)' },
+    navBar: { background: '#1a1a2e', borderTop: '0.5px solid rgba(255,255,255,0.08)', display: 'flex', position: 'fixed' as const, bottom: 0, left: 0, right: 0, height: 'calc(60px + var(--app-safe-bottom))', paddingBottom: 'var(--app-safe-bottom)' },
   }
 
   if (authStatus === 'loading') return (
@@ -486,7 +447,7 @@ export default function Home() {
   return (
     <div style={s.page}>
       {boostSuccess && <BoostSuccessModal info={boostSuccess} onClose={() => setBoostSuccess(null)} />}
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(72px + env(safe-area-inset-bottom, 8px))' }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(72px + var(--app-safe-bottom))' }}>
         <div style={{ padding: '14px 14px 10px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -608,7 +569,7 @@ export default function Home() {
 
                     <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)', padding: '10px 12px' }}>
                       <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 8 }}>выполнено заданий: {profile.completedTasks}</div>
-                      {['Открой Reels по ссылке', 'Досмотри до конца 3 раза', 'Лайк, сохранение, сторис, отправь другу', 'Оставь комментарий под этим видео — минимум 5 слов, без эмодзи', 'Скопируй ссылку на этот Reels из самого Instagram (Поделиться → Скопировать ссылку) и вставь её в поле ниже'].map((step, i) => (
+                      {['Открой Reels и посмотри его', 'Поставь лайк', 'Нажми «Поделиться» → «Копировать ссылку»', 'Вернись сюда и вставь ссылку'].map((step, i) => (
                         <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'flex-start' }}>
                           <div style={s.stepDot}>{i + 1}</div>
                           <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', paddingTop: 2 }}>{step}</div>
@@ -644,62 +605,22 @@ export default function Home() {
                       {timerReady && (
                         <>
                           <div style={{ background: 'rgba(99,102,241,0.12)', borderRadius: 14, margin: '0 12px 8px', padding: 12, border: '0.5px solid rgba(99,102,241,0.25)' }}>
-                            <div style={{ fontSize: 11, fontWeight: 600, color: '#a5b4fc', marginBottom: 3 }}>Вставь свой комментарий</div>
-                            <div style={{ fontSize: 10, color: 'rgba(165,180,252,0.7)' }}>Написанный в Instagram под этим видео — минимум 5 слов, без эмодзи. ИИ проверит.</div>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: '#a5b4fc', marginBottom: 3 }}>Поставил лайк? Теперь ссылка</div>
+                            <div style={{ fontSize: 10, color: 'rgba(165,180,252,0.7)' }}>В Instagram под роликом: «Поделиться» → «Копировать ссылку», потом вернись сюда</div>
                           </div>
-                          <textarea
-                            style={{ ...s.input, margin: '0 12px 4px', width: 'calc(100% - 24px)', height: 80, resize: 'none', padding: 12 }}
-                            value={comment}
-                            onChange={e => { setComment(e.target.value); setWordCount(e.target.value.trim().split(/\s+/).filter((w: string) => w).length); setHasEmoji(EMOJI_REGEX.test(e.target.value)) }}
-                          />
-                          <div style={{ display: 'flex', justifyContent: 'space-between', margin: '0 12px 4px' }}>
-                            <div style={{ fontSize: 10, color: hasEmoji ? '#f87171' : 'rgba(255,255,255,0.3)' }}>{hasEmoji ? 'уберите эмодзи' : ''}</div>
-                            <div style={{ fontSize: 10, color: wordCount >= 5 ? '#4ade80' : 'rgba(255,255,255,0.3)' }}>{wordCount} / 5 слов</div>
-                          </div>
-
-                          <input
-                            style={{ ...s.input, margin: '8px 12px 4px', width: 'calc(100% - 24px)' }}
-                            placeholder="Вставь ссылку на Reels"
-                            value={taskProofLink}
-                            onChange={e => setTaskProofLink(e.target.value)}
-                          />
-                          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', margin: '0 12px 8px' }}>
-                            Открой Reels в Instagram → Поделиться → Скопировать ссылку → вставь сюда
-                          </div>
-
                           <div style={{ display: 'flex', gap: 8, margin: '0 12px 8px' }}>
-                            {([
-                              { kind: 'save' as const, label: 'Скриншот сохранения', value: saveScreenshot, busy: uploadingSave },
-                              { kind: 'comment' as const, label: 'Скриншот комментария', value: commentScreenshot, busy: uploadingComment },
-                            ]).map(({ kind, label, value, busy }) => (
-                              <label
-                                key={kind}
-                                style={{
-                                  flex: 1, borderRadius: 12, padding: 10, textAlign: 'center', cursor: 'pointer',
-                                  background: value ? 'rgba(74,222,128,0.1)' : 'rgba(255,255,255,0.05)',
-                                  border: value ? '0.5px solid rgba(74,222,128,0.3)' : '0.5px dashed rgba(255,255,255,0.2)',
-                                }}
-                              >
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  style={{ display: 'none' }}
-                                  onChange={e => handleScreenshotSelect(kind, e.target.files?.[0] || null)}
-                                />
-                                {value ? (
-                                  <img
-                                    src={`data:image/jpeg;base64,${value}`}
-                                    style={{ width: '100%', height: 60, objectFit: 'cover', borderRadius: 8, marginBottom: 6 }}
-                                    alt={label}
-                                  />
-                                ) : (
-                                  <div style={{ fontSize: 20, marginBottom: 6 }}>📎</div>
-                                )}
-                                <div style={{ fontSize: 10, color: value ? '#4ade80' : 'rgba(255,255,255,0.5)' }}>
-                                  {busy ? 'Обработка…' : value ? 'Готово — заменить' : label}
-                                </div>
-                              </label>
-                            ))}
+                            <input
+                              style={{ ...s.input, margin: 0, flex: 1, minWidth: 0 }}
+                              placeholder="instagram.com/reel/..."
+                              value={taskProofLink}
+                              onChange={e => setTaskProofLink(e.target.value)}
+                            />
+                            <button
+                              style={{ flexShrink: 0, border: 'none', borderRadius: 12, padding: '0 14px', background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                              onClick={pasteProofLink}
+                            >
+                              Вставить
+                            </button>
                           </div>
 
                           {checkError && (
@@ -707,12 +628,12 @@ export default function Home() {
                           )}
                           <button
                             style={s.btnGrad(
-                              wordCount >= 5 && !hasEmoji && taskProofLink.trim() && saveScreenshot && commentScreenshot && !checking && !uploadingSave && !uploadingComment ? PURPLE : 'rgba(255,255,255,0.1)',
-                              wordCount >= 5 && !hasEmoji && taskProofLink.trim() && saveScreenshot && commentScreenshot && !checking && !uploadingSave && !uploadingComment ? 1 : 0.5,
+                              taskProofLink.trim() && !checking ? PURPLE : 'rgba(255,255,255,0.1)',
+                              taskProofLink.trim() && !checking ? 1 : 0.5,
                             )}
                             onClick={completeTask}
                           >
-                            {checking ? 'ИИ проверяет...' : `Отправить на проверку — получить ${currentTask.reward} ₢`}
+                            {checking ? 'Проверяем...' : `Готово — получить ${currentTask.reward} ₢`}
                           </button>
                         </>
                       )}
