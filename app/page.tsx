@@ -26,6 +26,35 @@ const getLevel = (tasks: number) => {
 }
 
 const REQUIRED_SECONDS = 60
+
+// Шорткод из ссылки вида instagram.com/reel/<code>/ или /p/<code>/
+const getShortcode = (url: string): string | null => {
+  const m = url.match(/instagram\.com\/(?:[^/]+\/)?(?:reels?|p|tv)\/([A-Za-z0-9_-]+)/)
+  return m ? m[1] : null
+}
+
+// Шорткод Instagram — это числовой media id в base64-алфавите Instagram.
+// Длинные шорткоды (приватные посты) содержат id в первых 11 символах.
+const SHORTCODE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
+const shortcodeToMediaId = (code: string): string => {
+  let id = BigInt(0)
+  for (const ch of code.slice(0, 11)) {
+    id = id * BigInt(64) + BigInt(SHORTCODE_ALPHABET.indexOf(ch))
+  }
+  return id.toString()
+}
+
+// Ссылка, которая открывает Reels сразу в приложении Instagram, минуя браузер.
+// null — если не получилось разобрать ссылку (тогда открываем обычный https).
+const getInstagramAppLink = (url: string, platform: string | undefined): string | null => {
+  const code = getShortcode(url)
+  if (!code) return null
+  if (platform === 'android') {
+    const fallback = encodeURIComponent(url)
+    return `intent://www.instagram.com/reel/${code}/#Intent;package=com.instagram.android;scheme=https;S.browser_fallback_url=${fallback};end`
+  }
+  return `instagram://media?id=${shortcodeToMediaId(code)}`
+}
 const BOOST_PACKAGES = [
   { name: 'Мини', slots: 10, credits: 50, emoji: '🌱' },
   { name: 'Старт', slots: 25, credits: 100, emoji: '🚀' },
@@ -255,13 +284,29 @@ export default function Home() {
     }
   }, [])
 
-  const openReels = () => {
+  const openReels = ({ forceBrowser = false }: { forceBrowser?: boolean } = {}) => {
     if (!currentTask) return
     const tg = (window as any).Telegram?.WebApp
-    if (tg) {
-      tg.openLink(currentTask.reelsUrl)
+    const appLink = forceBrowser ? null : getInstagramAppLink(currentTask.reelsUrl, tg?.platform)
+    const openInBrowser = () => {
+      if (tg) tg.openLink(currentTask.reelsUrl)
+      else window.open(currentTask.reelsUrl, '_blank')
+    }
+
+    if (appLink) {
+      // Пробуем открыть приложение Instagram напрямую. Если через 1.5 сек
+      // мини-апп всё ещё на экране — приложение не открылось (не установлено
+      // или Telegram не пропустил ссылку), тогда открываем обычную ссылку.
+      let leftApp = false
+      const onHide = () => { if (document.hidden) leftApp = true }
+      document.addEventListener('visibilitychange', onHide)
+      window.location.href = appLink
+      setTimeout(() => {
+        document.removeEventListener('visibilitychange', onHide)
+        if (!leftApp && !document.hidden) openInBrowser()
+      }, 1500)
     } else {
-      window.open(currentTask.reelsUrl, '_blank')
+      openInBrowser()
     }
     setReelsOpened(true)
     setOpenedAt(Date.now())
@@ -521,7 +566,7 @@ export default function Home() {
                     </div>
 
                     <div
-                      onClick={openReels}
+                      onClick={() => openReels()}
                       style={{
                         height: 160,
                         background: 'radial-gradient(circle at 20% 15%, rgba(131,58,180,0.35) 0%, transparent 55%), radial-gradient(circle at 85% 85%, rgba(253,29,29,0.22) 0%, transparent 55%), linear-gradient(135deg, #1c1c30 0%, #0f0f1a 100%)',
@@ -572,9 +617,17 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <button style={s.btnGrad(IG_GRADIENT)} onClick={openReels}>
+                  <button style={s.btnGrad(IG_GRADIENT)} onClick={() => openReels()}>
                     {reelsOpened ? 'Открыть Reels снова' : 'Открыть Reels'}
                   </button>
+                  {reelsOpened && (
+                    <div
+                      style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', textAlign: 'center', margin: '-4px 12px 10px', cursor: 'pointer', textDecoration: 'underline' }}
+                      onClick={() => openReels({ forceBrowser: true })}
+                    >
+                      Instagram не открылся? Открыть по ссылке
+                    </div>
+                  )}
 
                   {reelsOpened && (
                     <>
