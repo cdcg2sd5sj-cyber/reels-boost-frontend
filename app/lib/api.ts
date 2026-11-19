@@ -1,6 +1,17 @@
 import axios from 'axios'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+
+/**
+ * Адрес картинки аватарки для <img>.
+ * - "/users/:id/avatar" — картинка сохранена на нашем бэкенде: берём её оттуда.
+ * - ссылка Instagram CDN (старые данные) — через наш прокси (у Instagram hotlink protection).
+ */
+export function avatarSrc(profilePicUrl: string | null): string | null {
+  if (!profilePicUrl) return null
+  if (profilePicUrl.startsWith('/')) return API_URL.replace(/\/$/, '') + profilePicUrl
+  return `/api/avatar-proxy?url=${encodeURIComponent(profilePicUrl)}`
+}
 const TOKEN_KEY = 'rb_token'
 
 export const tokenStorage = {

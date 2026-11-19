@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { Profile } from '../lib/api'
+import { Profile, avatarSrc } from '../lib/api'
 import { PURPLE } from '../lib/theme'
 import { getInitials } from './Avatar'
 
@@ -11,6 +11,8 @@ function loadImage(src: string | null): Promise<HTMLImageElement | null> {
   return new Promise(resolve => {
     if (!src) { resolve(null); return }
     const img = new Image()
+    // Картинка с бэкенда — другой домен; без этого canvas «испачкается» и не отдаст PNG.
+    img.crossOrigin = 'anonymous'
     img.onload = () => resolve(img)
     img.onerror = () => resolve(null)
     img.src = src
@@ -51,7 +53,7 @@ async function drawShareCard(profile: Profile): Promise<Blob | null> {
   const avatarSize = 220
   const avatarX = WIDTH / 2
   const avatarY = 340
-  const proxiedSrc = profile.profilePicUrl ? `/api/avatar-proxy?url=${encodeURIComponent(profile.profilePicUrl)}` : null
+  const proxiedSrc = avatarSrc(profile.profilePicUrl)
   const avatarImg = await loadImage(proxiedSrc)
 
   const ringGrad = ctx.createLinearGradient(avatarX - avatarSize / 2, avatarY - avatarSize / 2, avatarX + avatarSize / 2, avatarY + avatarSize / 2)

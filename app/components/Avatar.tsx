@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { IG_GRADIENT } from '../lib/theme'
+import { avatarSrc } from '../lib/api'
 
 /** Инициалы для аватара-заглушки (в духе Instagram — кольцо-градиент + инициалы) */
 export function getInitials(igUsername: string): string {
@@ -15,7 +16,7 @@ export function getInitials(igUsername: string): string {
  */
 export default function Avatar({ src, username, size }: { src: string | null; username: string; size: number }) {
   const [failed, setFailed] = useState(false)
-  const proxiedSrc = src ? `/api/avatar-proxy?url=${encodeURIComponent(src)}` : null
+  const proxiedSrc = avatarSrc(src)
 
   return (
     <div style={{ width: size, height: size, borderRadius: '50%', padding: 2, background: IG_GRADIENT, flexShrink: 0 }}>
