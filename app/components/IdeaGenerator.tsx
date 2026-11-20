@@ -1,6 +1,7 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { PURPLE } from '../lib/theme'
+import { apiErrorMessage, generateIdeasApi, getIdeasQuotaApi, IdeasResult } from '../lib/api'
 
 const CARD = { background: 'rgba(255,255,255,0.07)', borderRadius: 16, margin: '8px 12px', padding: 14, border: '0.5px solid rgba(255,255,255,0.1)' }
 const INPUT = { width: '100%', background: 'rgba(255,255,255,0.07)', border: '0.5px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '10px 12px', fontSize: 13, color: '#fff', outline: 'none' }
@@ -11,31 +12,28 @@ export default function IdeaGenerator() {
   const [ideaNiche, setIdeaNiche] = useState('')
   const [ideaLoading, setIdeaLoading] = useState(false)
   const [ideaError, setIdeaError] = useState('')
-  const [ideaResult, setIdeaResult] = useState<{
-    ideas: { hook: string; structure: string; cta: string }[]
-    caption: string
-    hashtags: string[]
-  } | null>(null)
+  const [ideaResult, setIdeaResult] = useState<IdeasResult | null>(null)
+  // Сколько генераций осталось сегодня (null — без ограничений, undefined — ещё не знаем)
+  const [remaining, setRemaining] = useState<number | null | undefined>(undefined)
+
+  useEffect(() => {
+    getIdeasQuotaApi().then(q => setRemaining(q.remaining)).catch(() => undefined)
+  }, [])
+
+  const outOfIdeas = remaining === 0
 
   const generateIdeas = async () => {
-    if (!ideaNiche.trim()) return
+    if (!ideaNiche.trim() || outOfIdeas) return
     setIdeaLoading(true)
     setIdeaError('')
     setIdeaResult(null)
     try {
-      const response = await fetch('/api/generate-ideas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ niche: ideaNiche.trim() }),
-      })
-      const data = await response.json()
-      if (!response.ok || data.error) {
-        setIdeaError(data.error || 'Не удалось сгенерировать идеи, попробуй ещё раз')
-        return
-      }
-      setIdeaResult(data)
-    } catch {
-      setIdeaError('Ошибка сети — попробуй ещё раз')
+      const { remaining: left, ...result } = await generateIdeasApi(ideaNiche.trim())
+      setIdeaResult(result)
+      setRemaining(left)
+    } catch (err) {
+      setIdeaError(apiErrorMessage(err, 'Ошибка сети — попробуй ещё раз'))
+      if ((err as { response?: { status?: number } })?.response?.status === 429) setRemaining(0)
     } finally {
       setIdeaLoading(false)
     }
@@ -58,11 +56,16 @@ export default function IdeaGenerator() {
           onKeyDown={e => { if (e.key === 'Enter' && !ideaLoading) generateIdeas() }}
         />
         <button
-          style={btnGrad(ideaNiche.trim() && !ideaLoading ? PURPLE : 'rgba(255,255,255,0.1)', ideaNiche.trim() && !ideaLoading ? 1 : 0.5)}
+          style={btnGrad(ideaNiche.trim() && !ideaLoading && !outOfIdeas ? PURPLE : 'rgba(255,255,255,0.1)', ideaNiche.trim() && !ideaLoading && !outOfIdeas ? 1 : 0.5)}
           onClick={generateIdeas}
         >
-          {ideaLoading ? 'ИИ придумывает...' : 'Сгенерировать идеи'}
+          {ideaLoading ? 'ИИ придумывает...' : outOfIdeas ? 'Новая генерация — завтра' : 'Сгенерировать идеи'}
         </button>
+        {typeof remaining === 'number' && (
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
+            {remaining > 0 ? `Осталось сегодня: ${remaining}` : 'Бесплатно — 1 генерация в день. В платных тарифах больше'}
+          </div>
+        )}
       </div>
 
       {ideaError && (

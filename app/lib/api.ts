@@ -131,6 +131,25 @@ export async function getLeaderboard(period: LeaderboardPeriod): Promise<Leaderb
 }
 
 /** Достаёт текст ошибки из ответа NestJS (ValidationPipe/BadRequestException) */
+export interface IdeasResult {
+  ideas: { hook: string; structure: string; cta: string }[]
+  caption: string
+  hashtags: string[]
+}
+
+/** remaining: сколько генераций осталось сегодня; null — без ограничений */
+export interface IdeasQuota { limit: number | null; used: number; remaining: number | null }
+
+export async function getIdeasQuotaApi(): Promise<IdeasQuota> {
+  const { data } = await client.get('/ai/ideas/quota')
+  return data
+}
+
+export async function generateIdeasApi(niche: string): Promise<IdeasResult & { remaining: number | null }> {
+  const { data } = await client.post('/ai/ideas', { niche })
+  return data
+}
+
 export function apiErrorMessage(err: unknown, fallback: string): string {
   const anyErr = err as any
   const message = anyErr?.response?.data?.message
