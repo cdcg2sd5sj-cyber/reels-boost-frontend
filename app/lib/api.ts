@@ -149,16 +149,45 @@ export interface IdeasResult {
 }
 
 /**
- * remaining — бесплатных генераций осталось сегодня; paidRemaining — сколько ещё можно
- * купить за кредиты сегодня (null — без ограничений); creditPrice — цена в ₢.
+ * Лимит ИИ-инструмента на сегодня: remaining — бесплатных попыток осталось;
+ * paidRemaining — сколько ещё можно купить за кредиты; creditPrice — цена в ₢.
  */
 export interface IdeasQuota {
-  limit: number | null
+  limit: number
   used: number
-  remaining: number | null
-  paidRemaining: number | null
+  remaining: number
+  paidRemaining: number
   creditPrice: number
   balance: number
+}
+
+export type AiTool = 'ideas' | 'hooks' | 'caption' | 'check'
+type QuotaFields = Pick<IdeasQuota, 'remaining' | 'paidRemaining' | 'balance' | 'creditPrice'>
+
+export async function getAiQuotasApi(): Promise<Record<AiTool, IdeasQuota>> {
+  const { data } = await client.get('/ai/quota')
+  return data
+}
+
+export async function generateHooksApi(topic: string, payWithCredits = false): Promise<{ hooks: string[] } & QuotaFields> {
+  const { data } = await client.post('/ai/hooks', { topic, payWithCredits })
+  return data
+}
+
+export async function improveCaptionApi(text: string, payWithCredits = false): Promise<{ captions: string[]; tip: string } & QuotaFields> {
+  const { data } = await client.post('/ai/caption', { text, payWithCredits })
+  return data
+}
+
+export interface CheckResult { score: number; firstImpression: string; strengths: string[]; fixes: string[] }
+
+export async function checkBeforePublishApi(
+  images: { data: string; mediaType: 'image/jpeg' }[],
+  description: string,
+  payWithCredits = false,
+): Promise<CheckResult & QuotaFields> {
+  const { data } = await client.post('/ai/check', { images, description, payWithCredits })
+  return data
 }
 
 export async function getIdeasQuotaApi(): Promise<IdeasQuota> {

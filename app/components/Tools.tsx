@@ -2,6 +2,9 @@
 import { useState } from 'react'
 import { IG_GRADIENT } from '../lib/theme'
 import IdeaGenerator from './IdeaGenerator'
+import HooksTool from './HooksTool'
+import CaptionTool from './CaptionTool'
+import CheckTool from './CheckTool'
 
 const ChevronLeftIcon = ({ color }: { color: string }) => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
@@ -24,6 +27,27 @@ const TOOLS: Tool[] = [
     title: 'AI-генератор идей',
     description: 'Концепции роликов, подпись и хэштеги под вашу нишу',
     render: () => <IdeaGenerator />,
+  },
+  {
+    id: 'hooks',
+    emoji: '🎣',
+    title: 'Генератор хуков',
+    description: '10 первых фраз, чтобы зритель не пролистал',
+    render: () => <HooksTool />,
+  },
+  {
+    id: 'caption',
+    emoji: '✍️',
+    title: 'Улучшить подпись',
+    description: '3 цепляющих варианта подписи с призывом к действию',
+    render: () => <CaptionTool />,
+  },
+  {
+    id: 'check',
+    emoji: '🔍',
+    title: 'Проверка перед публикацией',
+    description: 'ИИ оценит кадры и обложку и подскажет правки',
+    render: () => <CheckTool />,
   },
 ]
 
