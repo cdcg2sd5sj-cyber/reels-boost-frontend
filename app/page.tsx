@@ -276,7 +276,7 @@ export default function Home() {
     }
   }, [])
 
-  const openReels = ({ forceBrowser = false }: { forceBrowser?: boolean } = {}) => {
+  const openReels = () => {
     if (!currentTask) return
     const tg = (window as any).Telegram?.WebApp
     // Сервер сам засекает время просмотра. Не ждём ответа: ссылку нужно открыть
@@ -287,7 +287,7 @@ export default function Home() {
         setReelsOpened(false)
       })
     }
-    const appLink = forceBrowser ? null : getInstagramAppLink(currentTask.reelsUrl, tg?.platform)
+    const appLink = getInstagramAppLink(currentTask.reelsUrl, tg?.platform)
     const openInBrowser = () => {
       if (tg) tg.openLink(currentTask.reelsUrl)
       else window.open(currentTask.reelsUrl, '_blank')
@@ -589,14 +589,6 @@ export default function Home() {
                   <button style={s.btnGrad(IG_GRADIENT)} onClick={() => openReels()}>
                     {reelsOpened ? 'Открыть Reels снова' : 'Открыть Reels'}
                   </button>
-                  {reelsOpened && (
-                    <div
-                      style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', textAlign: 'center', margin: '-4px 12px 10px', cursor: 'pointer', textDecoration: 'underline' }}
-                      onClick={() => openReels({ forceBrowser: true })}
-                    >
-                      Instagram не открылся? Открыть по ссылке
-                    </div>
-                  )}
 
                   {reelsOpened && (
                     <>
