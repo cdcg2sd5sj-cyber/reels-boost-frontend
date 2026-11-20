@@ -1,4 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import Anthropic from '@anthropic-ai/sdk'
+
+// Клиент создаётся при первом запросе, а не при сборке: на этапе сборки ключа может не быть.
+// Ключ берётся из ANTHROPIC_API_KEY в переменных окружения Vercel.
+let client: Anthropic | null = null
+const getClient = () => (client ??= new Anthropic())
 
 export async function POST(req: NextRequest) {
   const { niche } = await req.json()
@@ -7,16 +13,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Укажи нишу или тему' }, { status: 400 })
   }
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY!,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1200,
+  let text = '{}'
+  try {
+    const response = await getClient().messages.create({
+      // Haiku 5.5: быстрее и в десятки раз дешевле Sonnet, для идей хватает.
+      model: 'claude-haiku-5-5',
+      max_tokens: 4000,
+      // Задача простая — минимум размышлений, быстрее ответ и меньше затрат.
+      output_config: { effort: 'low' },
       messages: [{
         role: 'user',
         content: `Ты помогаешь начинающему блогеру придумать контент для Instagram Reels.
@@ -43,11 +47,16 @@ export async function POST(req: NextRequest) {
   "hashtags": ["#...", "#..."]
 }`,
       }],
-    }),
-  })
-
-  const data = await response.json()
-  const text = data.content?.[0]?.text || '{}'
+    })
+    // У Haiku 5.5 размышления включены по умолчанию: первым блоком может идти thinking,
+    // поэтому берём именно текстовый блок.
+    if (response.stop_reason !== 'refusal') {
+      text = response.content.find(b => b.type === 'text')?.text ?? '{}'
+    }
+  } catch (error) {
+    console.error('generate-ideas: Claude API error', error instanceof Anthropic.APIError ? error.status : error)
+    return NextResponse.json({ error: 'Сервис идей временно недоступен, попробуй позже' }, { status: 502 })
+  }
 
   try {
     const clean = text.replace(/```json|```/g, '').trim()
