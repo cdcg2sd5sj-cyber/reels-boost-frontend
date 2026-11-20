@@ -705,6 +705,30 @@ export default function Home() {
                         <div style={{ height: '100%', width: `${percent}%`, background: BLUE, borderRadius: 6, transition: 'width 0.4s ease' }}></div>
                       </div>
                     </div>
+
+                    <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)', padding: '10px 12px 12px' }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 8 }}>Кто посмотрел</div>
+                      {activeCampaign.viewers && activeCampaign.viewers.length > 0 ? (
+                        activeCampaign.viewers.map(v => (
+                          <div key={v.username} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0' }}>
+                            <Avatar src={v.profilePicUrl} username={v.username} size={32} />
+                            <a
+                              href={`https://instagram.com/${v.username}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{ fontSize: 12, color: '#fff', textDecoration: 'none', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                            >
+                              @{v.username}
+                            </a>
+                            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', flexShrink: 0 }}>
+                              {new Date(v.completedAt).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>Пока никто — первые участники появятся здесь</div>
+                      )}
+                    </div>
                   </div>
                 )
               }
@@ -758,6 +782,18 @@ export default function Home() {
                 <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>@{profile.igUsername}</div>
                 <div style={{ fontSize: 11, fontWeight: 600, color: level.color, marginTop: 2 }}>{level.name}</div>
               </div>
+            </div>
+
+            <div
+              onClick={() => setShowLeaderboard(true)}
+              style={{ ...s.card, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
+            >
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: IG_GRADIENT, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🏆</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 2 }}>Топ авторов</div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>Таблица лидеров по неделе, месяцу и за всё время</div>
+              </div>
+              <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.3)' }}>›</span>
             </div>
 
             <div

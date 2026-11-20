@@ -79,6 +79,14 @@ export interface CampaignDto {
   status: 'ACTIVE' | 'COMPLETED' | 'PAUSED'
   createdAt: string
   _count: { completions: number }
+  /** Последние участники, выполнившие задание (новые сверху) */
+  viewers?: CampaignViewer[]
+}
+
+export interface CampaignViewer {
+  username: string
+  profilePicUrl: string | null
+  completedAt: string
 }
 
 function getTelegramInitData(): string {
