@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import {
-  login, getProfile, getNextTask, completeTaskApi, openTaskApi, createCampaignApi, getMyCampaigns,
+  login, getProfile, getNextTask, completeTaskApi, openTaskApi, reportTaskApi, createCampaignApi, getMyCampaigns,
   tokenStorage, apiErrorMessage, Profile, NextTask, CampaignDto,
 } from './lib/api'
 import { IG_GRADIENT, PURPLE, BLUE } from './lib/theme'
@@ -314,6 +314,28 @@ export default function Home() {
     setCheckError('')
   }
 
+  const [reporting, setReporting] = useState(false)
+  const reportProblem = async () => {
+    if (!currentTask || reporting) return
+    setReporting(true)
+    setCheckError('')
+    try {
+      await reportTaskApi(currentTask.id)
+      setTaskProofLink('')
+      setReelsOpened(false)
+      setOpenedAt(null)
+      const msg = 'Спасибо, что сообщил! Это задание мы убрали — вот другое.'
+      const tg = (window as any).Telegram?.WebApp
+      if (tg?.showAlert) tg.showAlert(msg)
+      else window.alert(msg)
+      await loadNextTask()
+    } catch (err) {
+      setCheckError(apiErrorMessage(err, 'Не удалось отправить жалобу — попробуй ещё раз'))
+    } finally {
+      setReporting(false)
+    }
+  }
+
   const pasteProofLink = async () => {
     try {
       const text = await navigator.clipboard.readText()
@@ -589,6 +611,14 @@ export default function Home() {
                   <button style={s.btnGrad(IG_GRADIENT)} onClick={() => openReels()}>
                     {reelsOpened ? 'Открыть Reels снова' : 'Открыть Reels'}
                   </button>
+                  {reelsOpened && (
+                    <div
+                      style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', textAlign: 'center', margin: '-4px 12px 10px', cursor: 'pointer', textDecoration: 'underline' }}
+                      onClick={reportProblem}
+                    >
+                      {reporting ? 'Отправляем...' : 'Reels не открывается? Сообщить о проблеме'}
+                    </div>
+                  )}
 
                   {reelsOpened && (
                     <>

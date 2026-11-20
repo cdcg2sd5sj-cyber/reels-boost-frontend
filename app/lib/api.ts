@@ -111,6 +111,11 @@ export async function getNextTask(): Promise<NextTask | null> {
 }
 
 /** Сообщает серверу, что человек открыл Reels: от этого момента сервер отсчитывает время просмотра. */
+/** Жалоба «Reels не открывается»: задание пропадает из ленты этого пользователя. */
+export async function reportTaskApi(campaignId: number) {
+  await client.post('/tasks/report', { campaignId })
+}
+
 export async function openTaskApi(campaignId: number) {
   const { data } = await client.post('/tasks/open', { campaignId })
   return data as { openedAt: string; minWatchSeconds: number }
