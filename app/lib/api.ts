@@ -110,6 +110,12 @@ export async function getNextTask(): Promise<NextTask | null> {
   return data
 }
 
+/** Сообщает серверу, что человек открыл Reels: от этого момента сервер отсчитывает время просмотра. */
+export async function openTaskApi(campaignId: number) {
+  const { data } = await client.post('/tasks/open', { campaignId })
+  return data as { openedAt: string; minWatchSeconds: number }
+}
+
 export async function completeTaskApi(campaignId: number, reelsUrl: string) {
   const { data } = await client.post('/tasks/complete', { campaignId, reelsUrl })
   return data as { creditsEarned: number; streak: number; streakBonusApplied: boolean }

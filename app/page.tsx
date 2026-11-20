@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import {
-  login, getProfile, getNextTask, completeTaskApi, createCampaignApi, getMyCampaigns,
+  login, getProfile, getNextTask, completeTaskApi, openTaskApi, createCampaignApi, getMyCampaigns,
   tokenStorage, apiErrorMessage, Profile, NextTask, CampaignDto,
 } from './lib/api'
 import { IG_GRADIENT, PURPLE, BLUE } from './lib/theme'
@@ -279,6 +279,14 @@ export default function Home() {
   const openReels = ({ forceBrowser = false }: { forceBrowser?: boolean } = {}) => {
     if (!currentTask) return
     const tg = (window as any).Telegram?.WebApp
+    // Сервер сам засекает время просмотра. Не ждём ответа: ссылку нужно открыть
+    // прямо в момент нажатия, иначе Telegram её заблокирует.
+    if (!reelsOpened) {
+      openTaskApi(currentTask.id).catch(() => {
+        setCheckError('Не удалось связаться с сервером — нажми «Открыть Reels» ещё раз')
+        setReelsOpened(false)
+      })
+    }
     const appLink = forceBrowser ? null : getInstagramAppLink(currentTask.reelsUrl, tg?.platform)
     const openInBrowser = () => {
       if (tg) tg.openLink(currentTask.reelsUrl)
