@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { PURPLE } from '../lib/theme'
-import { apiErrorMessage, generateIdeasApi, getIdeasQuotaApi, IdeasResult } from '../lib/api'
+import { apiErrorMessage, generateIdeasApi, getIdeasQuotaApi, IdeasQuota, IdeasResult } from '../lib/api'
 
 const CARD = { background: 'rgba(255,255,255,0.07)', borderRadius: 16, margin: '8px 12px', padding: 14, border: '0.5px solid rgba(255,255,255,0.1)' }
 const INPUT = { width: '100%', background: 'rgba(255,255,255,0.07)', border: '0.5px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '10px 12px', fontSize: 13, color: '#fff', outline: 'none' }
@@ -13,31 +13,48 @@ export default function IdeaGenerator() {
   const [ideaLoading, setIdeaLoading] = useState(false)
   const [ideaError, setIdeaError] = useState('')
   const [ideaResult, setIdeaResult] = useState<IdeasResult | null>(null)
-  // Сколько генераций осталось сегодня (null — без ограничений, undefined — ещё не знаем)
-  const [remaining, setRemaining] = useState<number | null | undefined>(undefined)
+  // Квота на сегодня (undefined — ещё не загрузили)
+  const [quota, setQuota] = useState<IdeasQuota | undefined>(undefined)
 
   useEffect(() => {
-    getIdeasQuotaApi().then(q => setRemaining(q.remaining)).catch(() => undefined)
+    getIdeasQuotaApi().then(setQuota).catch(() => undefined)
   }, [])
 
-  const outOfIdeas = remaining === 0
+  const freeLeft = quota ? quota.remaining === null || quota.remaining > 0 : true
+  const paidLeft = !!quota && (quota.paidRemaining === null || quota.paidRemaining > 0)
+  const canAfford = !!quota && quota.balance >= quota.creditPrice
+  // Режим кнопки: бесплатно / за кредиты / не хватает кредитов / на сегодня всё
+  const mode: 'free' | 'paid' | 'poor' | 'done' = freeLeft ? 'free' : !paidLeft ? 'done' : canAfford ? 'paid' : 'poor'
+  const active = !!ideaNiche.trim() && !ideaLoading && (mode === 'free' || mode === 'paid')
 
   const generateIdeas = async () => {
-    if (!ideaNiche.trim() || outOfIdeas) return
+    if (!active) return
     setIdeaLoading(true)
     setIdeaError('')
     setIdeaResult(null)
     try {
-      const { remaining: left, ...result } = await generateIdeasApi(ideaNiche.trim())
+      const { remaining, paidRemaining, balance, creditPrice, ...result } = await generateIdeasApi(ideaNiche.trim(), mode === 'paid')
       setIdeaResult(result)
-      setRemaining(left)
+      setQuota(q => q && { ...q, remaining, paidRemaining, balance, creditPrice })
     } catch (err) {
       setIdeaError(apiErrorMessage(err, 'Ошибка сети — попробуй ещё раз'))
-      if ((err as { response?: { status?: number } })?.response?.status === 429) setRemaining(0)
+      getIdeasQuotaApi().then(setQuota).catch(() => undefined)
     } finally {
       setIdeaLoading(false)
     }
   }
+
+  const buttonText = ideaLoading
+    ? 'ИИ придумывает...'
+    : mode === 'free' ? 'Сгенерировать идеи'
+    : mode === 'paid' ? `Сгенерировать за ${quota!.creditPrice} ₢`
+    : mode === 'poor' ? `Нужно ${quota!.creditPrice} ₢ — выполни пару заданий`
+    : 'На сегодня всё — приходи завтра'
+
+  const hint = !quota ? null
+    : mode === 'free' ? (quota.remaining === null ? 'Без ограничений' : `Бесплатно сегодня: ${quota.remaining}. Дальше — ${quota.creditPrice} ₢ за генерацию`)
+    : mode === 'done' ? 'Лимит на день исчерпан. В платных тарифах генераций больше'
+    : `Бесплатная генерация на сегодня использована · Баланс: ${quota.balance} ₢`
 
   return (
     <>
@@ -56,15 +73,13 @@ export default function IdeaGenerator() {
           onKeyDown={e => { if (e.key === 'Enter' && !ideaLoading) generateIdeas() }}
         />
         <button
-          style={btnGrad(ideaNiche.trim() && !ideaLoading && !outOfIdeas ? PURPLE : 'rgba(255,255,255,0.1)', ideaNiche.trim() && !ideaLoading && !outOfIdeas ? 1 : 0.5)}
+          style={btnGrad(active ? PURPLE : 'rgba(255,255,255,0.1)', active ? 1 : 0.5)}
           onClick={generateIdeas}
         >
-          {ideaLoading ? 'ИИ придумывает...' : outOfIdeas ? 'Новая генерация — завтра' : 'Сгенерировать идеи'}
+          {buttonText}
         </button>
-        {typeof remaining === 'number' && (
-          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
-            {remaining > 0 ? `Осталось сегодня: ${remaining}` : 'Бесплатно — 1 генерация в день. В платных тарифах больше'}
-          </div>
+        {hint && (
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>{hint}</div>
         )}
       </div>
 

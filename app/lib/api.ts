@@ -148,16 +148,29 @@ export interface IdeasResult {
   hashtags: string[]
 }
 
-/** remaining: сколько генераций осталось сегодня; null — без ограничений */
-export interface IdeasQuota { limit: number | null; used: number; remaining: number | null }
+/**
+ * remaining — бесплатных генераций осталось сегодня; paidRemaining — сколько ещё можно
+ * купить за кредиты сегодня (null — без ограничений); creditPrice — цена в ₢.
+ */
+export interface IdeasQuota {
+  limit: number | null
+  used: number
+  remaining: number | null
+  paidRemaining: number | null
+  creditPrice: number
+  balance: number
+}
 
 export async function getIdeasQuotaApi(): Promise<IdeasQuota> {
   const { data } = await client.get('/ai/ideas/quota')
   return data
 }
 
-export async function generateIdeasApi(niche: string): Promise<IdeasResult & { remaining: number | null }> {
-  const { data } = await client.post('/ai/ideas', { niche })
+export async function generateIdeasApi(
+  niche: string,
+  payWithCredits = false,
+): Promise<IdeasResult & Pick<IdeasQuota, 'remaining' | 'paidRemaining' | 'balance' | 'creditPrice'>> {
+  const { data } = await client.post('/ai/ideas', { niche, payWithCredits })
   return data
 }
 

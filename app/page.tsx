@@ -471,7 +471,8 @@ export default function Home() {
   const noTasksAvailable = !taskLoading && !currentTask
 
   if (showRoadmap) return <RoadmapPage onBack={() => setShowRoadmap(false)} />
-  if (showTools) return <ToolsPage onBack={() => setShowTools(false)} />
+  // После инструментов обновляем профиль: баланс мог измениться (покупка генераций за ₢).
+  if (showTools) return <ToolsPage onBack={() => { setShowTools(false); getProfile().then(setProfile).catch(() => undefined) }} />
   if (showLeaderboard) return <LeaderboardPage onBack={() => setShowLeaderboard(false)} profile={profile} />
 
   return (
