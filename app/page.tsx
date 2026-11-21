@@ -446,13 +446,13 @@ export default function Home() {
       <div style={{ padding: '20px 16px', flex: 1 }}>
         <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>Твой Instagram</div>
         <input style={{ ...s.input, marginBottom: 8 }} placeholder="@username" value={igInput} onChange={e => setIgInput(e.target.value)} />
-        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 20 }}>Открытый аккаунт, от 10 подписчиков</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 20 }}>Подойдёт любой открытый аккаунт, где есть хотя бы одна публикация. Подписчики не важны</div>
         {igError && (
           <div style={{ background: 'rgba(239,68,68,0.1)', border: '0.5px solid rgba(239,68,68,0.2)', borderRadius: 10, padding: '8px 12px', fontSize: 11, color: '#f87171', marginBottom: 16 }}>{igError}</div>
         )}
         <div style={{ background: 'rgba(99,102,241,0.15)', borderRadius: 14, padding: 14, marginBottom: 24, border: '0.5px solid rgba(99,102,241,0.25)' }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: '#a5b4fc', marginBottom: 8 }}>Как это работает</div>
-          {['Выполняй задания — зарабатывай Credits', 'Трать Credits на продвижение Reels', 'Получай живую активность от реальных людей'].map((t, i) => (
+          {['Смотри чужие Reels и ставь лайк — получай ₢', 'Трать ₢ на продвижение своего Reels', 'Получай просмотры и лайки от живых людей'].map((t, i) => (
             <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
               <div style={{ ...s.stepDot, width: 16, height: 16, fontSize: 8 }}>{i + 1}</div>
               <div style={{ fontSize: 11, color: 'rgba(165,180,252,0.8)' }}>{t}</div>
@@ -834,7 +834,7 @@ export default function Home() {
               <div style={{ width: 40, height: 40, borderRadius: 12, background: IG_GRADIENT, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🛠</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 2 }}>Инструменты</div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>AI-генератор идей и другие помощники</div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>Идеи, хуки, сценарий, подпись, проверка и разбор статистики</div>
               </div>
               <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.3)' }}>›</span>
             </div>
