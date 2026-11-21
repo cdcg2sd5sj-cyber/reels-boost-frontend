@@ -5,6 +5,8 @@ import IdeaGenerator from './IdeaGenerator'
 import HooksTool from './HooksTool'
 import CaptionTool from './CaptionTool'
 import CheckTool from './CheckTool'
+import ScriptTool from './ScriptTool'
+import StatsTool from './StatsTool'
 
 const ChevronLeftIcon = ({ color }: { color: string }) => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
@@ -43,11 +45,25 @@ const TOOLS: Tool[] = [
     render: () => <CaptionTool />,
   },
   {
+    id: 'script',
+    emoji: '🎬',
+    title: 'Сценарий Reels',
+    description: 'Покадровый план: что снимать, текст на экране, что говорить',
+    render: () => <ScriptTool />,
+  },
+  {
     id: 'check',
     emoji: '🔍',
     title: 'Проверка перед публикацией',
     description: 'ИИ оценит кадры и обложку и подскажет правки',
     render: () => <CheckTool />,
+  },
+  {
+    id: 'stats',
+    emoji: '📊',
+    title: 'Почему Reels не залетел',
+    description: 'ИИ разберёт скриншоты статистики и скажет, что исправить',
+    render: () => <StatsTool />,
   },
 ]
 

@@ -161,7 +161,7 @@ export interface IdeasQuota {
   balance: number
 }
 
-export type AiTool = 'ideas' | 'hooks' | 'caption' | 'check'
+export type AiTool = 'ideas' | 'hooks' | 'caption' | 'check' | 'script' | 'stats'
 type QuotaFields = Pick<IdeasQuota, 'remaining' | 'paidRemaining' | 'balance' | 'creditPrice'>
 
 export async function getAiQuotasApi(): Promise<Record<AiTool, IdeasQuota>> {
@@ -187,6 +187,30 @@ export async function checkBeforePublishApi(
   payWithCredits = false,
 ): Promise<CheckResult & QuotaFields> {
   const { data } = await client.post('/ai/check', { images, description, payWithCredits })
+  return data
+}
+
+export interface ScriptScene { time: string; shot: string; text: string; voice: string }
+export interface ScriptResult { scenes: ScriptScene[]; cta: string; filmingTips: string[] }
+
+export async function generateScriptApi(idea: string, seconds: number, payWithCredits = false): Promise<ScriptResult & QuotaFields> {
+  const { data } = await client.post('/ai/script', { idea, seconds, payWithCredits })
+  return data
+}
+
+export interface StatsResult {
+  summary: string
+  keyNumbers: { label: string; value: string; verdict: 'good' | 'ok' | 'bad' }[]
+  problems: string[]
+  nextSteps: string[]
+}
+
+export async function reviewStatsApi(
+  images: { data: string; mediaType: 'image/jpeg' }[],
+  note: string,
+  payWithCredits = false,
+): Promise<StatsResult & QuotaFields> {
+  const { data } = await client.post('/ai/stats', { images, note, payWithCredits })
   return data
 }
 
