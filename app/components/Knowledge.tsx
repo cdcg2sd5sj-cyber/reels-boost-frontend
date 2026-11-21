@@ -370,28 +370,14 @@ function AccordionCard({ article, open, onToggle }: { article: Article; open: bo
   )
 }
 
-function CategoryView({ category, onBack }: { category: Category; onBack: () => void }) {
+function CategoryView({ category }: { category: Category }) {
   const [openIndex, setOpenIndex] = useState<number | null>(0)
 
   return (
     <div>
-      <div style={{
-        position: 'sticky', top: 0, zIndex: 10, background: '#0f0f1a', display: 'flex', alignItems: 'center',
-        gap: 10, padding: '10px 14px 12px', borderBottom: '0.5px solid rgba(255,255,255,0.06)',
-      }}>
-        <button
-          onClick={onBack}
-          style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
-        >
-          <ChevronLeftIcon color="#fff" />
-        </button>
-        <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{category.emoji} {category.title}</span>
-      </div>
-
       <div style={{ padding: '10px 14px 2px' }}>
         <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>{category.description}</div>
       </div>
-
       <div style={{ paddingTop: 8, paddingBottom: 8 }}>
         {category.articles.map((article, i) => (
           <AccordionCard key={i} article={article} open={openIndex === i} onToggle={() => setOpenIndex(openIndex === i ? null : i)} />
@@ -401,24 +387,39 @@ function CategoryView({ category, onBack }: { category: Category; onBack: () => 
   )
 }
 
-export default function KnowledgeTab() {
+// Раздел «Знания» — открывается из вкладки «ИИ».
+export default function KnowledgePage({ onBack }: { onBack: () => void }) {
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null)
   const activeCategory = CATEGORIES.find(c => c.id === activeCategoryId) || null
 
-  if (activeCategory) {
-    return <CategoryView category={activeCategory} onBack={() => setActiveCategoryId(null)} />
-  }
-
   return (
-    <div style={{ paddingBottom: 8 }}>
-      <div style={{ padding: '4px 14px 10px' }}>
-        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>
-          Всё, что нужно знать об алгоритме, создании контента, аналитике и стратегии роста — без домыслов и обещаний вирусности.
-        </div>
+    <div style={{ minHeight: '100vh', background: '#0f0f1a', display: 'flex', flexDirection: 'column' }}>
+      <div style={{
+        position: 'sticky', top: 0, zIndex: 10, background: '#0f0f1a', display: 'flex', alignItems: 'center',
+        gap: 10, padding: '14px 14px 12px', borderBottom: '0.5px solid rgba(255,255,255,0.06)', flexShrink: 0,
+      }}>
+        <button
+          onClick={() => (activeCategory ? setActiveCategoryId(null) : onBack())}
+          style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+        >
+          <ChevronLeftIcon color="#fff" />
+        </button>
+        <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{activeCategory ? `${activeCategory.emoji} ${activeCategory.title}` : '📚 Знания'}</span>
       </div>
-      {CATEGORIES.map(category => (
-        <CategoryCard key={category.id} category={category} onClick={() => setActiveCategoryId(category.id)} />
-      ))}
+      <div style={{ flex: 1, overflowY: 'auto', paddingTop: 8, paddingBottom: 'calc(24px + var(--app-safe-bottom))' }}>
+        {activeCategory ? <CategoryView category={activeCategory} /> : (
+          <>
+            <div style={{ padding: '4px 14px 10px' }}>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>
+                Всё, что нужно знать об алгоритме, создании контента, аналитике и стратегии роста — без домыслов и обещаний вирусности.
+              </div>
+            </div>
+            {CATEGORIES.map(category => (
+              <CategoryCard key={category.id} category={category} onClick={() => setActiveCategoryId(category.id)} />
+            ))}
+          </>
+        )}
+      </div>
     </div>
   )
 }

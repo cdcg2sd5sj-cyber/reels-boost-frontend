@@ -6,8 +6,8 @@ import {
 } from './lib/api'
 import { IG_GRADIENT, PURPLE, BLUE } from './lib/theme'
 import RoadmapPage from './components/Roadmap'
-import ToolsPage from './components/Tools'
-import KnowledgeTab from './components/Knowledge'
+import ToolsPage, { AiTab } from './components/Tools'
+import KnowledgePage from './components/Knowledge'
 import LeaderboardPage from './components/Leaderboard'
 import AchievementsSection from './components/Achievements'
 import ShareResultsButton from './components/ShareCard'
@@ -71,10 +71,10 @@ const TasksIcon = ({ color }: IconProps) => (
   </svg>
 )
 
-const KnowledgeIcon = ({ color }: IconProps) => (
+const AiIcon = ({ color }: IconProps) => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+    <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" />
+    <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" />
   </svg>
 )
 
@@ -93,31 +93,6 @@ const ProfileIcon = ({ color }: IconProps) => (
   </svg>
 )
 
-const HeartIcon = ({ color }: IconProps) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M19.5 12.572 12 20l-7.5-7.428A5 5 0 1 1 12 6.006a5 5 0 1 1 7.5 6.566z" />
-  </svg>
-)
-
-const CommentIcon = ({ color }: IconProps) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-  </svg>
-)
-
-const ShareIcon = ({ color }: IconProps) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="22" y1="2" x2="11" y2="13" />
-    <polygon points="22 2 15 22 11 13 2 9 22 2" />
-  </svg>
-)
-
-const BookmarkIcon = ({ color }: IconProps) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-  </svg>
-)
-
 const PlayIcon = ({ color }: IconProps) => (
   <svg width="30" height="30" viewBox="0 0 24 24" fill={color} stroke="none">
     <path d="M8 5v14l11-7z" />
@@ -133,7 +108,8 @@ export default function Home() {
   const [tab, setTab] = useState('tasks')
   const [introSeen, setIntroSeen] = useState(false)
   const [showRoadmap, setShowRoadmap] = useState(false)
-  const [showTools, setShowTools] = useState(false)
+  const [openToolId, setOpenToolId] = useState<string | null>(null)
+  const [showKnowledge, setShowKnowledge] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [taskProofLink, setTaskProofLink] = useState('')
   const [reelsUrl, setReelsUrl] = useState('')
@@ -472,7 +448,8 @@ export default function Home() {
 
   if (showRoadmap) return <RoadmapPage onBack={() => setShowRoadmap(false)} />
   // После инструментов обновляем профиль: баланс мог измениться (покупка генераций за ₢).
-  if (showTools) return <ToolsPage onBack={() => { setShowTools(false); getProfile().then(setProfile).catch(() => undefined) }} />
+  if (openToolId) return <ToolsPage toolId={openToolId} onBack={() => { setOpenToolId(null); getProfile().then(setProfile).catch(() => undefined) }} />
+  if (showKnowledge) return <KnowledgePage onBack={() => setShowKnowledge(false)} />
   if (showLeaderboard) return <LeaderboardPage onBack={() => setShowLeaderboard(false)} profile={profile} />
 
   return (
@@ -492,9 +469,11 @@ export default function Home() {
             <div style={{ background: IG_GRADIENT, borderRadius: 20, padding: '6px 14px', fontSize: 13, fontWeight: 600, color: '#fff' }}>
               {profile.balance} ₢
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 20, padding: '6px 12px', fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>
-              {level.name}
-            </div>
+            {!level.next && (
+              <div style={{ background: 'rgba(245,158,11,0.15)', borderRadius: 20, padding: '6px 12px', fontSize: 11, fontWeight: 600, color: level.color }}>
+                ⭐ {level.name}
+              </div>
+            )}
             {profile.streak > 0 && (
               <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 20, padding: '6px 12px', fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>
                 🔥 {profile.streak} дн.
@@ -505,8 +484,8 @@ export default function Home() {
           {level.next && (
             <div style={{ marginTop: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>
-                <span>{profile.completedTasks} заданий</span>
-                <span>до {level.next} — следующий уровень</span>
+                <span style={{ color: level.color, fontWeight: 600 }}>{level.name}</span>
+                <span>{profile.completedTasks} / {level.next} заданий до следующего уровня</span>
               </div>
               <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 4 }}>
                 <div style={{ height: '100%', width: `${progressToNext}%`, background: IG_GRADIENT, borderRadius: 4 }}></div>
@@ -524,7 +503,7 @@ export default function Home() {
               <div style={{ ...s.card, background: 'rgba(245,158,11,0.15)', border: '0.5px solid rgba(245,158,11,0.3)', textAlign: 'center', padding: 20 }}>
                 <div style={{ fontSize: 28, marginBottom: 6 }}>🔥</div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: '#f59e0b', marginBottom: 4 }}>Стрик-бонус!</div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>7 дней подряд — +30 Credits!</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>7 дней подряд — +30 ₢!</div>
                 <button style={s.btnGrad(PURPLE)} onClick={() => setStreakBonus(false)}>Отлично!</button>
               </div>
             )}
@@ -542,24 +521,41 @@ export default function Home() {
                   <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>Ищем задание…</div>
                 </div>
               ) : noTasksAvailable ? (
-                <div style={{ ...s.card, textAlign: 'center', padding: 30 }}>
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>🎉</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Все задания выполнены!</div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>Новые появятся скоро. Запусти свой Reels!</div>
-                  <button style={s.btnGrad(BLUE)} onClick={() => setTab('boost')}>Продвинуть мой Reels</button>
-                </div>
+                <>
+                  <div style={{ ...s.card, textAlign: 'center', padding: '26px 20px 18px' }}>
+                    <div style={{ fontSize: 34, marginBottom: 8 }}>🎉</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Все задания выполнены!</div>
+                    <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>Новые появятся, когда участники запустят свои Reels. Мы напомним в Telegram.</div>
+                  </div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 0.6, padding: '10px 16px 2px' }}>Пока ждёшь</div>
+                  {[
+                    { emoji: '👥', title: copied ? 'Ссылка скопирована ✓' : 'Пригласи друга — +20 ₢', text: 'Тебе и другу. Больше участников — больше заданий', onClick: copyReferral },
+                    { emoji: '✨', title: 'ИИ-помощники', text: 'Идеи, хуки и сценарий для следующего Reels', onClick: () => setTab('ai') },
+                    { emoji: '🚀', title: 'Продвинуть мой Reels', text: profile.balance >= 50 ? `На балансе ${profile.balance} ₢ — хватит на пакет «Мини»` : 'Пакеты от 50 ₢ — 10 заданий, и можно запускать', onClick: () => setTab('boost') },
+                  ].map(item => (
+                    <div key={item.emoji} onClick={item.onClick} style={{ ...s.card, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 12, background: IG_GRADIENT, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{item.emoji}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{item.title}</div>
+                        <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.45)' }}>{item.text}</div>
+                      </div>
+                      <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.3)' }}>›</span>
+                    </div>
+                  ))}
+                </>
               ) : currentTask && (
                 <>
                   <div style={{ ...s.card, padding: 0, overflow: 'hidden' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px' }}>
                       <Avatar src={currentTask.author.profilePicUrl} username={currentTask.author.username} size={28} />
                       <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{currentTask.author.username}</span>
-                      <span style={{ marginLeft: 'auto', fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>задание</span>
+                      <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: '#4ade80', background: 'rgba(74,222,128,0.12)', borderRadius: 8, padding: '3px 8px' }}>+{currentTask.reward} ₢</span>
                     </div>
 
                     <div
                       onClick={() => openReels()}
                       style={{
+                        position: 'relative',
                         height: 160,
                         background: 'radial-gradient(circle at 20% 15%, rgba(131,58,180,0.35) 0%, transparent 55%), radial-gradient(circle at 85% 85%, rgba(253,29,29,0.22) 0%, transparent 55%), linear-gradient(135deg, #1c1c30 0%, #0f0f1a 100%)',
                         display: 'flex',
@@ -585,21 +581,10 @@ export default function Home() {
                           <PlayIcon color="rgba(255,255,255,0.9)" />
                         </div>
                       </div>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 12px 4px' }}>
-                      <HeartIcon color="#fff" />
-                      <CommentIcon color="#fff" />
-                      <ShareIcon color="#fff" />
-                      <div style={{ marginLeft: 'auto' }}><BookmarkIcon color="#fff" /></div>
-                    </div>
-
-                    <div style={{ padding: '4px 12px 12px' }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#4ade80' }}>За выполненное задание получаешь {currentTask.reward} ₢</span>
+                      <div style={{ position: 'absolute', bottom: 10, left: 0, right: 0, textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.55)' }}>Нажми, чтобы открыть в Instagram</div>
                     </div>
 
                     <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)', padding: '10px 12px' }}>
-                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 8 }}>выполнено заданий: {profile.completedTasks}</div>
                       {['Открой Reels и посмотри его', 'Поставь лайк', 'Нажми «Поделиться» → «Копировать ссылку»', 'Вернись сюда и вставь ссылку'].map((step, i) => (
                         <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'flex-start' }}>
                           <div style={s.stepDot}>{i + 1}</div>
@@ -676,7 +661,7 @@ export default function Home() {
           </>
         )}
 
-        {tab === 'knowledge' && <KnowledgeTab />}
+        {tab === 'ai' && <AiTab onOpenTool={setOpenToolId} onOpenKnowledge={() => setShowKnowledge(true)} />}
 
         {tab === 'boost' && (
           <>
@@ -767,6 +752,12 @@ export default function Home() {
               const selectedCost = BOOST_PACKAGES.find(p => p.slots === slots)?.credits || 50
               return (
                 <>
+                  <div style={{ ...s.card, background: 'rgba(99,102,241,0.12)', border: '0.5px solid rgba(99,102,241,0.25)' }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#a5b4fc', marginBottom: 6 }}>Как это работает</div>
+                    {['1 участник = просмотр от 30 сек + лайк', 'Уведомим в Telegram, когда пойдут просмотры', 'Можно запускать 1 продвижение в день'].map(t => (
+                      <div key={t} style={{ fontSize: 11, color: 'rgba(165,180,252,0.85)', marginBottom: 3 }}>• {t}</div>
+                    ))}
+                  </div>
                   <div style={s.card}>
                     <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>Ссылка на Reels</div>
                     <input style={s.input} placeholder="https://instagram.com/reel/..." value={reelsUrl} onChange={e => setReelsUrl(e.target.value)} />
@@ -795,11 +786,40 @@ export default function Home() {
                   )}
                   {profile.balance < selectedCost && !boostError && (
                     <div style={{ ...s.card, background: 'rgba(239,68,68,0.1)', border: '0.5px solid rgba(239,68,68,0.2)', textAlign: 'center' }}>
-                      <div style={{ fontSize: 11, color: '#f87171' }}>Недостаточно Credits — выполни задания</div>
+                      <div style={{ fontSize: 11, color: '#f87171' }}>Не хватает ₢ — выполни пару заданий</div>
                     </div>
                   )}
                   <button style={s.btnGrad(BLUE, profile.balance >= selectedCost && reelsUrl ? 1 : 0.35)} onClick={launchBoost}>Запустить продвижение</button>
                 </>
+              )
+            })()}
+            {(() => {
+              const past = campaigns.filter(c => c.status !== 'ACTIVE').slice(0, 5)
+              if (past.length === 0) return null
+              return (
+                <div style={s.card}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 6 }}>Прошлые продвижения</div>
+                  {past.map((c, i) => {
+                    const done = c.status === 'COMPLETED'
+                    return (
+                      <a
+                        key={c.id}
+                        href={c.reelsUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', textDecoration: 'none', borderTop: i ? '0.5px solid rgba(255,255,255,0.05)' : 'none' }}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 12, color: '#fff' }}>{new Date(c.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}</div>
+                          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>{c.filledSlots} из {c.totalSlots} участников</div>
+                        </div>
+                        <span style={{ fontSize: 10, fontWeight: 600, borderRadius: 8, padding: '3px 8px', color: done ? '#4ade80' : '#fbbf24', background: done ? 'rgba(74,222,128,0.12)' : 'rgba(251,191,36,0.12)' }}>
+                          {done ? 'Завершено ✓' : 'Остановлено'}
+                        </span>
+                      </a>
+                    )
+                  })}
+                </div>
               )
             })()}
           </>
@@ -811,7 +831,9 @@ export default function Home() {
               <Avatar src={profile.profilePicUrl} username={profile.igUsername} size={56} />
               <div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>@{profile.igUsername}</div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: level.color, marginTop: 2 }}>{level.name}</div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: level.color, marginTop: 2 }}>
+                  {level.name}{profile.streak > 0 && <span style={{ color: '#f59e0b' }}> · 🔥 {profile.streak} дн. подряд</span>}
+                </div>
               </div>
             </div>
 
@@ -823,18 +845,6 @@ export default function Home() {
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 2 }}>Топ авторов</div>
                 <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>Таблица лидеров по неделе, месяцу и за всё время</div>
-              </div>
-              <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.3)' }}>›</span>
-            </div>
-
-            <div
-              onClick={() => setShowTools(true)}
-              style={{ ...s.card, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
-            >
-              <div style={{ width: 40, height: 40, borderRadius: 12, background: IG_GRADIENT, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🛠</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 2 }}>Инструменты</div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>Идеи, хуки, сценарий, подпись, проверка и разбор статистики</div>
               </div>
               <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.3)' }}>›</span>
             </div>
@@ -858,9 +868,7 @@ export default function Home() {
                   { label: 'Заданий', value: profile.completedTasks, color: '#fff' },
                   { label: 'Заработано', value: `${profile.earnedTotal} ₢`, color: '#4ade80' },
                   { label: 'Потрачено', value: `${profile.spentTotal} ₢`, color: '#818cf8' },
-                  { label: 'Стрик', value: `${profile.streak} дн.`, color: '#f59e0b' },
                   { label: 'Приглашено', value: profile.referrals, color: '#c084fc' },
-                  { label: 'Уровень', value: level.name, color: level.color },
                 ].map((item, i) => (
                   <div key={i} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 10, border: '0.5px solid rgba(255,255,255,0.06)' }}>
                     <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', marginBottom: 3 }}>{item.label}</div>
@@ -883,22 +891,6 @@ export default function Home() {
                 </button>
               </div>
             </div>
-            <div style={s.card}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10 }}>Уровни</div>
-              {[
-                { name: 'Новичок', req: '0 заданий', color: '#6b7280' },
-                { name: 'Активный', req: '6 заданий', color: '#3b82f6' },
-                { name: 'Проверенный', req: '21 задание', color: '#a855f7' },
-                { name: 'Про', req: '51 задание', color: '#f59e0b' },
-              ].map((l, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < 3 ? '0.5px solid rgba(255,255,255,0.05)' : 'none' }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: l.color, flexShrink: 0 }}></div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: l.color, width: 90 }}>{l.name}</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>{l.req}</div>
-                  {level.name === l.name && <div style={{ marginLeft: 'auto', fontSize: 9, background: 'rgba(255,255,255,0.1)', borderRadius: 6, padding: '2px 6px', color: '#fff' }}>Текущий</div>}
-                </div>
-              ))}
-            </div>
           </>
         )}
       </div>
@@ -906,7 +898,7 @@ export default function Home() {
       <div style={s.navBar}>
         {([
           { id: 'tasks', label: 'Задания', Icon: TasksIcon },
-          { id: 'knowledge', label: 'Знания', Icon: KnowledgeIcon },
+          { id: 'ai', label: 'ИИ', Icon: AiIcon },
           { id: 'boost', label: 'Мой Reels', Icon: BoostIcon },
           { id: 'stats', label: 'Профиль', Icon: ProfileIcon },
         ] as const).map(item => {

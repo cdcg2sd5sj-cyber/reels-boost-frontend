@@ -255,16 +255,6 @@ export default function RoadmapPage({ onBack }: { onBack: () => void }) {
         </Reveal>
 
         <Reveal>
-          <div style={{ ...CARD, margin: '0 14px 20px' }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 10 }}>Почему мы создаём этот проект?</div>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.7 }}>
-              Большинство сервисов решают только одну задачу.<br /><br />
-              Мы хотим создать место, где автор сможет развивать свой Instagram полностью — от первых просмотров до полноценной монетизации.
-            </div>
-          </div>
-        </Reveal>
-
-        <Reveal>
           <div style={{ padding: '0 20px', marginBottom: 4 }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Roadmap</div>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 16, lineHeight: 1.5 }}>
@@ -289,16 +279,6 @@ export default function RoadmapPage({ onBack }: { onBack: () => void }) {
             >
               💡 Предложить идею
             </button>
-          </div>
-        </Reveal>
-
-        <Reveal>
-          <div style={{ ...CARD, margin: '0 14px 20px' }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 10 }}>Почему мы не выпускаем всё сразу?</div>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.7 }}>
-              Наша цель — не количество функций.<br /><br />
-              Наша цель — создать действительно полезную платформу. Каждая функция проходит проектирование, тестирование и только потом появляется в приложении.
-            </div>
           </div>
         </Reveal>
 
